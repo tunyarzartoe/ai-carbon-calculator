@@ -204,20 +204,25 @@ function updateGauge(){
    Flow control
    ========================================================= */
 function goToStep(stepId){
+  if (!stepId) return;
   if (stepId === 'result'){ return; } // handled after waste step finishes
   const step = steps.find(s => s.id === stepId);
+  if (!step) return;
   clearOptions();
   aiSpeak(step.ai, () => renderOptions(step.options));
 }
 
 function selectOption(opt){
   clearOptions();
+  addBubble(opt.label, 'user');
+
   if (opt.value !== undefined){
-    addBubble(opt.label, 'user');
     const currentStep = steps.find(s => s.options.some(o => o === opt));
     if (currentStep && currentStep.onAnswer) currentStep.onAnswer(opt.value);
-  } else {
-    addBubble(opt.label, 'user');
+  }
+
+  if (opt.restart){
+    return setTimeout(restart, 300);
   }
 
   if (opt.next === 'result'){
@@ -244,6 +249,13 @@ function biggestCategory(){
   return entries[0][0];
 }
 
+const CATEGORY_LABELS = {
+  transport: '移動',
+  electricity: '電気',
+  meal: '食事',
+  waste: '廃棄'
+};
+
 const TIPS = {
   transport:   '💡 週に1〜2回、電車やバス・自転車に切り替えるだけでも移動によるCO2はぐっと減るよ。',
   electricity: '💡 使っていない部屋の電気やエアコンをこまめに消すと、電気由来のCO2を減らせるよ。',
@@ -254,22 +266,39 @@ const TIPS = {
 function showResult(){
   const { grade, cls, msg } = rankFor(state.total);
   const tipKey = biggestCategory();
+  const breakdown = Object.entries(state.breakdown)
+    .map(([key, value]) => `
+      <div class="result-detail">
+        <span>${CATEGORY_LABELS[key]}</span>
+        <strong>${value.toFixed(2)}kg</strong>
+      </div>
+    `).join('');
+
+  const message = state.total === 0
+    ? '今日の行動はとてもエコです！この調子で続けましょう🌿'
+    : msg;
+
+  removeTyping();
+  updateGauge();
 
   const div = document.createElement('div');
   div.className = 'bubble ai result';
   div.innerHTML = `
     <span class="ai-tag">AI 診断結果</span>
-    <div class="rank ${cls}">${grade}<span style="font-size:14px;color:var(--text-dim);font-weight:500;"> ランク</span></div>
-    <p style="margin:8px 0 4px;">本日の推定排出量: <strong>${state.total.toFixed(1)} kg CO2</strong></p>
-    <p style="margin:0 0 10px;color:var(--text-dim);font-size:13px;">${msg}</p>
-    <p style="margin:0;">${TIPS[tipKey]}</p>
+    <div class="rank ${cls}">${grade}<span class="rank-label">ランク</span></div>
+    <p class="result-summary">本日の推定排出量: <strong>${state.total.toFixed(1)} kg CO2</strong></p>
+    <div class="result-breakdown">${breakdown}</div>
+    <p class="result-message">${message}</p>
+    <p class="result-tip">${TIPS[tipKey]}</p>
   `;
   chatLog.appendChild(div);
   scrollToBottom();
 
-  renderOptions([{ label: '↻ もう一度診断する', restart: true }]);
-  replyOptions.querySelector('.reply-btn').classList.add('restart');
-  replyOptions.querySelector('.reply-btn').onclick = restart;
+  renderOptions([{ label: '↻ もう一度診断する', next: 'intro', restart: true }]);
+  const restartBtn = replyOptions.querySelector('.reply-btn');
+  if (restartBtn) {
+    restartBtn.classList.add('restart');
+  }
 }
 
 function restart(){
