@@ -1,0 +1,51 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <meta http-equiv="Content-Security-Policy" content="default-src * data: gap: content: https://ssl.gstatic.com; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'">
+    <script src="components/loader.js"></script>
+    <script src="classic.js"></script>
+    <link rel="stylesheet" href="components/loader.css">
+    <link rel="stylesheet" href="css/style.css">
+    <script>
+    </script>
+</head>
+
+<body>
+    <div class="app">
+
+        <!-- ===== HEADER : gauge + title ===== -->
+        <header class="app-header">
+            <div class="brand">
+                <span class="brand-tag">ECO / AI</span>
+                <h1 class="brand-title">CO<sub>2</sub> Compass</h1>
+            </div>
+
+            <div class="gauge-wrap" aria-label="本日の推定CO2排出量">
+                <svg class="gauge" viewBox="0 0 120 120">
+          <circle class="gauge-track" cx="60" cy="60" r="52"></circle>
+          <circle id="gaugeFill" class="gauge-fill" cx="60" cy="60" r="52"></circle>
+        </svg>
+                <div class="gauge-readout">
+                    <span id="gaugeValue">0.0</span>
+                    <span class="gauge-unit">kg CO2 / 日</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- ===== CHAT LOG ===== -->
+        <main id="chatLog" class="chat-log" aria-live="polite"></main>
+
+        <!-- ===== QUICK REPLIES ===== -->
+        <footer class="reply-dock">
+            <div id="replyOptions" class="reply-options"></div>
+        </footer>
+
+    </div>
+    <script src="main.js"></script>
+
+</body>
+
+</html>
