@@ -11,7 +11,7 @@ const gaugeFill     = document.getElementById('gaugeFill');
 const gaugeValueEl  = document.getElementById('gaugeValue');
 
 const GAUGE_CIRCUMFERENCE = 326.7; // 2 * PI * r(52)
-const GAUGE_MAX_KG = 20;           // scale: 0kg -> 20kg maps to 0% -> 100%
+const GAUGE_MAX_KG = 30;           // adjusted scale for realistic daily totals
 
 // ---- running state ----
 let state = {
@@ -22,37 +22,45 @@ let state = {
 /* =========================================================
    Emission factors (simplified estimates for teaching demo)
    ========================================================= */
+// TRANSPORT: use kgCO2 per passenger-km (approximate averages)
+// values (kg CO2 / passenger-km): walk/bike 0, train ~0.04, bus ~0.08, car ~0.17
 const TRANSPORT = {
-  walk:  { label: '徒歩・自転車', kgPerDay: 0 },
-  train: { label: '電車',        kgPerDay: 0.04 * 20 }, // 20km/day avg
-  bus:   { label: 'バス',        kgPerDay: 0.08 * 20 },
-  car:   { label: '車',          kgPerDay: 0.17 * 20 }
+  walk:  { label: '徒歩・自転車', kgPerKm: 0 },
+  train: { label: '電車',        kgPerKm: 0.04 },
+  bus:   { label: 'バス',        kgPerKm: 0.08 },
+  car:   { label: '車',          kgPerKm: 0.17 }
 };
-const DISTANCE_MULT = {
-  short:  { label: '近い (〜5km)',  mult: 0.4 },
-  medium: { label: '普通 (5〜15km)', mult: 1.0 },
-  long:   { label: '遠い (15km〜)',  mult: 1.8 }
+
+// Representative one-way distances (km) for each category
+const DISTANCE_KM = {
+  short:  { label: '近い (〜5km)',  km: 5 },
+  medium: { label: '普通 (5〜15km)', km: 12 },
+  long:   { label: '遠い (15km〜)',  km: 30 }
 };
+// Electricity: use grid intensity (kgCO2 per kWh) and approximate daily kWh usage
+const GRID_INTENSITY = 0.46; // kg CO2 per kWh (example value - varies by grid)
 const ELECTRICITY = {
-  low:    { label: '少ない (こまめに消す)', kg: 0.46 * 2 },
-  medium: { label: '普通',                 kg: 0.46 * 5 },
-  high:   { label: '多い (エアコン・ゲーム長時間)', kg: 0.46 * 10 }
+  low:    { label: '少ない (こまめに消す)', hoursKwh: 2 },
+  medium: { label: '普通',                 hoursKwh: 5 },
+  high:   { label: '多い (エアコン・ゲーム長時間)', hoursKwh: 10 }
 };
+// Food and waste estimates (kg CO2 per day)
 const MEAL = {
   veggie: { label: '野菜中心', kg: 1.5 },
-  mixed:  { label: 'バランス型', kg: 4.0 },
-  meat:   { label: '肉・揚げ物多め', kg: 8.0 }
+  mixed:  { label: 'バランス型', kg: 3.5 },
+  meat:   { label: '肉・揚げ物多め', kg: 7.5 }
 };
 const WASTE = {
-  always:    { label: '必ず分別する', kg: 0.1 },
-  sometimes: { label: 'たまに分別する', kg: 0.3 },
-  rarely:    { label: 'あまりしない', kg: 0.6 }
+  always:    { label: '必ず分別する', kg: 0.2 },
+  sometimes: { label: 'たまに分別する', kg: 0.5 },
+  rarely:    { label: 'あまりしない', kg: 1.0 }
 };
 
 /* =========================================================
    Conversation script
    ========================================================= */
 let transportChoice = null;
+let currentStepId = null;
 
 const steps = [
   {
@@ -61,45 +69,61 @@ const steps = [
       'こんにちは。私は CO2 Compass、きみの1日の生活からおおよそのCO2排出量を推定するAIだよ🌱',
       '4つの質問に答えるだけ。正確な数値じゃなく「だいたいの目安」として見てね。さっそく始めよう。'
     ],
-    options: [{ label: 'はじめる ▶', next: 'transport' }]
+    options: [{ label: 'はじめる', icon: '✨', next: 'transport' }]
   },
   {
     id: 'transport',
     ai: ['Q1. 通学・移動手段は主に何かな？'],
     options: Object.entries(TRANSPORT).map(([key, v]) => ({
-      label: v.label, value: key, next: 'distance'
+      label: v.label,
+      icon: key === 'walk' ? '🚶' : key === 'train' ? '🚆' : key === 'bus' ? '🚌' : '🚗',
+      value: key,
+      next: 'distance'
     })),
     onAnswer: (val) => { transportChoice = val; }
   },
   {
     id: 'distance',
     ai: ['なるほど。だいたいの片道の距離は？'],
-    options: Object.entries(DISTANCE_MULT).map(([key, v]) => ({
-      label: v.label, value: key, next: 'electricity'
+    options: Object.entries(DISTANCE_KM).map(([key, v]) => ({
+      label: v.label,
+      icon: key === 'short' ? '📍' : key === 'medium' ? '🛤️' : '🛣️',
+      value: key,
+      next: 'electricity'
     })),
     onAnswer: (val) => {
-      const base = TRANSPORT[transportChoice].kgPerDay;
-      const kg = +(base * DISTANCE_MULT[val].mult).toFixed(2);
+      const kgPerKm = TRANSPORT[transportChoice].kgPerKm || 0;
+      const km = DISTANCE_KM[val].km || 0;
+      // round-trip assumed (往復)
+      const totalKm = km * 2;
+      const kg = +(kgPerKm * totalKm).toFixed(2);
       addResult('transport', kg,
-        `移動: ${TRANSPORT[transportChoice].label} / ${DISTANCE_MULT[val].label} → 約 ${kg}kg`);
+        `移動: ${TRANSPORT[transportChoice].label} / ${DISTANCE_KM[val].label}（往復 ${totalKm}km）→ 約 ${kg}kg`);
     }
   },
   {
     id: 'electricity',
     ai: ['Q2. 家での電気の使い方は？(エアコン・ゲーム・照明など)'],
     options: Object.entries(ELECTRICITY).map(([key, v]) => ({
-      label: v.label, value: key, next: 'meal'
+      label: v.label,
+      icon: key === 'low' ? '💡' : key === 'medium' ? '🔌' : '⚡',
+      value: key,
+      next: 'meal'
     })),
     onAnswer: (val) => {
-      const kg = +ELECTRICITY[val].kg.toFixed(2);
-      addResult('electricity', kg, `電気使用: ${ELECTRICITY[val].label} → 約 ${kg}kg`);
+      const hours = ELECTRICITY[val].hoursKwh || 0;
+      const kg = +(GRID_INTENSITY * hours).toFixed(2);
+      addResult('electricity', kg, `電気使用: ${ELECTRICITY[val].label}（約 ${hours} kWh）→ 約 ${kg}kg`);
     }
   },
   {
     id: 'meal',
     ai: ['Q3. 今日の食事はどんな感じ？'],
     options: Object.entries(MEAL).map(([key, v]) => ({
-      label: v.label, value: key, next: 'waste'
+      label: v.label,
+      icon: key === 'veggie' ? '🥗' : key === 'mixed' ? '🍛' : '🍖',
+      value: key,
+      next: 'waste'
     })),
     onAnswer: (val) => {
       const kg = +MEAL[val].kg.toFixed(2);
@@ -110,7 +134,10 @@ const steps = [
     id: 'waste',
     ai: ['最後の質問。ゴミの分別はどのくらいしてる？'],
     options: Object.entries(WASTE).map(([key, v]) => ({
-      label: v.label, value: key, next: 'result'
+      label: v.label,
+      icon: key === 'always' ? '♻️' : key === 'sometimes' ? '🗑️' : '🚯',
+      value: key,
+      next: 'result'
     })),
     onAnswer: (val) => {
       const kg = +WASTE[val].kg.toFixed(2);
@@ -173,7 +200,16 @@ function renderOptions(options){
   options.forEach(opt => {
     const btn = document.createElement('button');
     btn.className = 'reply-btn';
-    btn.textContent = opt.label;
+    if (opt.icon){
+      const icon = document.createElement('span');
+      icon.className = 'btn-icon';
+      icon.textContent = opt.icon;
+      btn.appendChild(icon);
+    }
+    const text = document.createElement('span');
+    text.className = 'btn-text';
+    text.textContent = opt.label;
+    btn.appendChild(text);
     btn.onclick = () => selectOption(opt);
     replyOptions.appendChild(btn);
   });
@@ -185,6 +221,9 @@ function addResult(category, kg, note){
   state.breakdown[category] += kg;
   state.total = +(state.total + kg).toFixed(2);
   updateGauge();
+  if (note){
+    addBubble(note, 'ai');
+  }
 }
 
 function updateGauge(){
@@ -208,6 +247,7 @@ function goToStep(stepId){
   if (stepId === 'result'){ return; } // handled after waste step finishes
   const step = steps.find(s => s.id === stepId);
   if (!step) return;
+  currentStepId = stepId;
   clearOptions();
   aiSpeak(step.ai, () => renderOptions(step.options));
 }
@@ -217,7 +257,8 @@ function selectOption(opt){
   addBubble(opt.label, 'user');
 
   if (opt.value !== undefined){
-    const currentStep = steps.find(s => s.options.some(o => o === opt));
+    // use currentStepId to reliably find the step that presented the options
+    const currentStep = steps.find(s => s.id === currentStepId) || steps.find(s => s.options.some(o => o === opt));
     if (currentStep && currentStep.onAnswer) currentStep.onAnswer(opt.value);
   }
 
@@ -294,7 +335,7 @@ function showResult(){
   chatLog.appendChild(div);
   scrollToBottom();
 
-  renderOptions([{ label: '↻ もう一度診断する', next: 'intro', restart: true }]);
+  renderOptions([{ label: 'もう一度診断する', icon: '↻', next: 'intro', restart: true }]);
   const restartBtn = replyOptions.querySelector('.reply-btn');
   if (restartBtn) {
     restartBtn.classList.add('restart');
