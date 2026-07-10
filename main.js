@@ -146,9 +146,6 @@ const steps = [
   }
 ];
 
-/* =========================================================
-   Chat rendering helpers
-   ========================================================= */
 function scrollToBottom(){
   chatLog.scrollTop = chatLog.scrollHeight;
 }
@@ -213,6 +210,12 @@ function renderOptions(options){
     btn.onclick = () => selectOption(opt);
     replyOptions.appendChild(btn);
   });
+
+  scrollToBottom();
+  const firstButton = replyOptions.querySelector('.reply-btn');
+  if (firstButton){
+    firstButton.focus({ preventScroll: true });
+  }
 }
 
 function clearOptions(){ replyOptions.innerHTML = ''; }
@@ -239,9 +242,6 @@ function updateGauge(){
   gaugeFill.style.stroke = color;
 }
 
-/* =========================================================
-   Flow control
-   ========================================================= */
 function goToStep(stepId){
   if (!stepId) return;
   if (stepId === 'result'){ return; } // handled after waste step finishes
@@ -333,7 +333,6 @@ function showResult(){
     <p class="result-tip">${TIPS[tipKey]}</p>
   `;
   chatLog.appendChild(div);
-  scrollToBottom();
 
   renderOptions([{ label: 'もう一度診断する', icon: '↻', next: 'intro', restart: true }]);
   const restartBtn = replyOptions.querySelector('.reply-btn');
