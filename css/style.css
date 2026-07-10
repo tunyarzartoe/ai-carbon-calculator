@@ -148,7 +148,9 @@ body{
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 18px 16px 110px;
+  scroll-behavior: smooth;
+  scroll-padding-bottom: 140px;
+  padding: 18px 16px 140px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -169,6 +171,11 @@ body{
 @keyframes rise{
   from{ opacity: 0; transform: translateY(8px); }
   to{ opacity: 1; transform: translateY(0); }
+}
+
+.bubble,
+.typing{
+  scroll-margin-bottom: 140px;
 }
 
 .bubble.ai{
@@ -275,6 +282,9 @@ body{
 
 /* ================= QUICK REPLIES ================= */
 .reply-dock{
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
   border-top: 1px solid rgba(61,255,176,.12);
   background: rgba(15,24,20,.96);
   padding: 14px 16px calc(14px + env(safe-area-inset-bottom));

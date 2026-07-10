@@ -147,7 +147,9 @@ const steps = [
 ];
 
 function scrollToBottom(){
-  chatLog.scrollTop = chatLog.scrollHeight;
+  requestAnimationFrame(() => {
+    chatLog.scrollTop = chatLog.scrollHeight;
+  });
 }
 
 function addBubble(text, cls){
@@ -159,7 +161,10 @@ function addBubble(text, cls){
     div.textContent = text;
   }
   chatLog.appendChild(div);
-  scrollToBottom();
+  requestAnimationFrame(() => {
+    div.scrollIntoView({ block: 'end', inline: 'nearest' });
+    scrollToBottom();
+  });
 }
 
 function showTyping(){
