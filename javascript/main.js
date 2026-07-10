@@ -16,6 +16,7 @@ const GAUGE_MAX_KG = 30;           // adjusted scale for realistic daily totals
 // ---- running state ----
 let state = {
   total: 0,
+  goal: null,
   breakdown: { transport: 0, electricity: 0, meal: 0, waste: 0 }
 };
 
@@ -57,6 +58,49 @@ const WASTE = {
 };
 
 /* =========================================================
+   Feature: AI reply variation
+   A small pool of natural acknowledgement phrases, picked at
+   random before each question so the bot feels less scripted.
+   ========================================================= */
+const ACK_PHRASES = [
+  'なるほど!', '了解!', 'いいね、次いこう。', 'OK、記録したよ。',
+  'ふむふむ。', 'わかった!', 'そうなんだね。', 'メモしたよ📝'
+];
+function randomAck(){
+  return ACK_PHRASES[Math.floor(Math.random() * ACK_PHRASES.length)];
+}
+
+/* =========================================================
+   Feature: History (localStorage)
+   One entry per calendar day; used for the history panel and
+   for comparing today's total against past averages.
+   ========================================================= */
+const HISTORY_KEY = 'co2compass_history_v1';
+
+function todayStr(){
+  return new Date().toISOString().slice(0, 10);
+}
+
+function loadHistory(){
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e){
+    return [];
+  }
+}
+
+function saveHistoryEntry(entry){
+  let hist = loadHistory();
+  const idx = hist.findIndex(h => h.date === entry.date);
+  if (idx >= 0) hist[idx] = entry; else hist.push(entry);
+  hist.sort((a, b) => a.date.localeCompare(b.date));
+  hist = hist.slice(-30); // keep last 30 days
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(hist)); } catch (e){ /* storage unavailable */ }
+  return hist;
+}
+
+/* =========================================================
    Conversation script
    ========================================================= */
 let transportChoice = null;
@@ -69,7 +113,18 @@ const steps = [
       'こんにちは。私は CO2 Compass、きみの1日の生活からおおよそのCO2排出量を推定するAIだよ🌱',
       '4つの質問に答えるだけ。正確な数値じゃなく「だいたいの目安」として見てね。さっそく始めよう。'
     ],
-    options: [{ label: 'はじめる', icon: '✨', next: 'transport' }]
+    options: [{ label: 'はじめる', icon: '✨', next: 'goal' }]
+  },
+  {
+    id: 'goal',
+    ai: ['最後にもう一つだけ。今日の目標にしたいCO2量はある？（なくてもOK）'],
+    options: [
+      { label: '5kg以下', icon: '🎯', value: 5, next: 'transport' },
+      { label: '8kg以下', icon: '🎯', value: 8, next: 'transport' },
+      { label: '12kg以下', icon: '🎯', value: 12, next: 'transport' },
+      { label: '目標なし', icon: '➖', value: null, next: 'transport' }
+    ],
+    onAnswer: (val) => { state.goal = val; }
   },
   {
     id: 'transport',
@@ -146,6 +201,9 @@ const steps = [
   }
 ];
 
+/* =========================================================
+   Chat rendering helpers
+   ========================================================= */
 function scrollToBottom(){
   requestAnimationFrame(() => {
     chatLog.scrollTop = chatLog.scrollHeight;
@@ -241,12 +299,15 @@ function updateGauge(){
   gaugeValueEl.textContent = state.total.toFixed(1);
 
   let color = 'var(--mint)';
-  if (state.total > 15) color = 'var(--danger)';
-  else if (state.total > 9) color = 'var(--warn)';
-  else if (state.total > 5) color = 'var(--cyan)';
+  if (state.total > 16) color = 'var(--danger)';
+  else if (state.total > 11) color = 'var(--warn)';
+  else if (state.total > 6) color = 'var(--cyan)';
   gaugeFill.style.stroke = color;
 }
 
+/* =========================================================
+   Flow control
+   ========================================================= */
 function goToStep(stepId){
   if (!stepId) return;
   if (stepId === 'result'){ return; } // handled after waste step finishes
@@ -254,7 +315,8 @@ function goToStep(stepId){
   if (!step) return;
   currentStepId = stepId;
   clearOptions();
-  aiSpeak(step.ai, () => renderOptions(step.options));
+  const lines = stepId === 'intro' ? step.ai : [randomAck(), ...step.ai];
+  aiSpeak(lines, () => renderOptions(step.options));
 }
 
 function selectOption(opt){
@@ -282,10 +344,10 @@ function selectOption(opt){
    Final result
    ========================================================= */
 function rankFor(total){
-  if (total <= 5)  return { grade: 'S', cls: '',        msg: 'とてもエコな1日！このまま続けよう🌿' };
-  if (total <= 9)  return { grade: 'A', cls: '',        msg: '良いバランスだね。あと一歩でSランク！' };
-  if (total <= 13) return { grade: 'B', cls: 'warn',    msg: 'まずまず。1つ習慣を見直すと変わるよ。' };
-  if (total <= 17) return { grade: 'C', cls: 'warn',    msg: '改善の余地あり。下のヒントを試してみよう。' };
+  if (total <= 6)  return { grade: 'S', cls: '',        msg: 'とてもエコな1日！このまま続けよう🌿' };
+  if (total <= 11) return { grade: 'A', cls: '',        msg: '良いバランスだね。あと一歩でSランク！' };
+  if (total <= 16) return { grade: 'B', cls: 'warn',    msg: 'まずまず。1つ習慣を見直すと変わるよ。' };
+  if (total <= 21) return { grade: 'C', cls: 'warn',    msg: '改善の余地あり。下のヒントを試してみよう。' };
   return              { grade: 'D', cls: 'danger',    msg: '今日から少しずつ変えていこう。きっとできる！' };
 }
 
@@ -309,20 +371,53 @@ const TIPS = {
   waste:       '💡 ゴミを分別してリサイクルに回すだけでも、廃棄によるCO2を減らせるよ。'
 };
 
+function buildBreakdownChart(){
+  const entries = Object.entries(state.breakdown);
+  const max = Math.max(...entries.map(e => e[1]), 0.01);
+  return entries.map(([key, val]) => {
+    const pct = Math.max(Math.min((val / max) * 100, 100), val > 0 ? 3 : 0);
+    return `
+      <div class="chart-row">
+        <span class="chart-label">${CATEGORY_LABELS[key]}</span>
+        <div class="chart-track"><div class="chart-fill cat-${key}" style="width:${pct}%"></div></div>
+        <span class="chart-value">${val.toFixed(2)}kg</span>
+      </div>`;
+  }).join('');
+}
+
+function goalMessageHtml(){
+  if (state.goal === null || state.goal === undefined) return '';
+  if (state.total <= state.goal){
+    return `<p class="goal-badge success">🎯 目標（${state.goal}kg以下）達成！</p>`;
+  }
+  const diff = (state.total - state.goal).toFixed(1);
+  return `<p class="goal-badge miss">🎯 目標まであと ${diff}kg</p>`;
+}
+
+function historyCompareHtml(history){
+  const past = history.filter(h => h.date !== todayStr());
+  if (past.length === 0) return '';
+  const avg = past.reduce((sum, h) => sum + h.total, 0) / past.length;
+  const diff = state.total - avg;
+  const arrow = diff > 0.2 ? '↑' : diff < -0.2 ? '↓' : '→';
+  const cls = diff > 0.2 ? 'up' : diff < -0.2 ? 'down' : 'flat';
+  return `<p class="history-compare ${cls}">これまでの平均 ${avg.toFixed(1)}kg と比べて ${arrow} ${Math.abs(diff).toFixed(1)}kg</p>`;
+}
+
 function showResult(){
   const { grade, cls, msg } = rankFor(state.total);
   const tipKey = biggestCategory();
-  const breakdown = Object.entries(state.breakdown)
-    .map(([key, value]) => `
-      <div class="result-detail">
-        <span>${CATEGORY_LABELS[key]}</span>
-        <strong>${value.toFixed(2)}kg</strong>
-      </div>
-    `).join('');
+  const chart = buildBreakdownChart();
 
   const message = state.total === 0
     ? '今日の行動はとてもエコです！この調子で続けましょう🌿'
     : msg;
+
+  const updatedHistory = saveHistoryEntry({
+    date: todayStr(),
+    total: state.total,
+    breakdown: state.breakdown
+  });
 
   removeTyping();
   updateGauge();
@@ -333,11 +428,14 @@ function showResult(){
     <span class="ai-tag">AI 診断結果</span>
     <div class="rank ${cls}">${grade}<span class="rank-label">ランク</span></div>
     <p class="result-summary">本日の推定排出量: <strong>${state.total.toFixed(1)} kg CO2</strong></p>
-    <div class="result-breakdown">${breakdown}</div>
+    <div class="result-breakdown">${chart}</div>
+    ${goalMessageHtml()}
+    ${historyCompareHtml(updatedHistory)}
     <p class="result-message">${message}</p>
     <p class="result-tip">${TIPS[tipKey]}</p>
   `;
   chatLog.appendChild(div);
+  scrollToBottom();
 
   renderOptions([{ label: 'もう一度診断する', icon: '↻', next: 'intro', restart: true }]);
   const restartBtn = replyOptions.querySelector('.reply-btn');
@@ -347,7 +445,7 @@ function showResult(){
 }
 
 function restart(){
-  state = { total: 0, breakdown: { transport: 0, electricity: 0, meal: 0, waste: 0 } };
+  state = { total: 0, goal: null, breakdown: { transport: 0, electricity: 0, meal: 0, waste: 0 } };
   transportChoice = null;
   updateGauge();
   chatLog.innerHTML = '';
@@ -356,7 +454,43 @@ function restart(){
 }
 
 /* =========================================================
+   History panel (toggled from the header button)
+   ========================================================= */
+function renderHistoryPanel(){
+  const panel = document.getElementById('historyPanel');
+  if (!panel) return;
+  const hist = loadHistory().slice(-7);
+
+  if (hist.length === 0){
+    panel.innerHTML = '<p class="history-empty">まだ記録がないよ。診断すると自動で記録されるよ📅</p>';
+    return;
+  }
+  const max = Math.max(...hist.map(h => h.total), 1);
+  panel.innerHTML = `
+    <div class="history-title">直近の記録（最大7日）</div>
+    <div class="history-bars">
+      ${hist.map(h => `
+        <div class="history-bar-col">
+          <div class="history-bar" style="height:${Math.max((h.total / max) * 100, 4)}%"></div>
+          <span class="history-bar-val">${h.total.toFixed(1)}</span>
+          <span class="history-bar-date">${h.date.slice(5)}</span>
+        </div>`).join('')}
+    </div>
+  `;
+}
+
+function toggleHistoryPanel(){
+  const panel = document.getElementById('historyPanel');
+  if (!panel) return;
+  const isOpen = panel.classList.toggle('open');
+  if (isOpen) renderHistoryPanel();
+}
+
+/* =========================================================
    Boot
    ========================================================= */
+const historyToggleBtn = document.getElementById('historyToggle');
+if (historyToggleBtn) historyToggleBtn.onclick = toggleHistoryPanel;
+
 updateGauge();
 goToStep('intro');

@@ -1,48 +1,51 @@
-<!DOCTYPE HTML>
-<html>
-
+<!DOCTYPE html>
+<html lang="ja">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <meta http-equiv="Content-Security-Policy" content="default-src * data: gap: content: https://ssl.gstatic.com; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval'">
-    <title>CO2 Compass</title>
-    <link rel="stylesheet" href="css/style.css">
-    <script>
-    </script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>CO2 Compass | カーボン診断AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
-    <div class="app" >
-        <header class="app-header" >
-            <div class="brand">
-                <span class="brand-tag">ECO / AI</span>
-                <h1 class="brand-title">CO<sub>2</sub> Compass</h1>
-                <p class="brand-subtitle">4つの質問で今日のCO<sub>2</sub>排出をやさしく診断</p>
-            </div>
 
-            <div class="gauge-wrap" aria-label="本日の推定CO2排出量">
-                <svg class="gauge" viewBox="0 0 120 120">
+  <div class="app">
+
+    <!-- ===== HEADER : gauge + title ===== -->
+    <header class="app-header">
+      <div class="brand">
+        <span class="brand-tag">ECO / AI</span>
+        <h1 class="brand-title">CO<sub>2</sub> Compass</h1>
+      </div>
+
+      <button id="historyToggle" class="history-toggle" aria-label="履歴を表示" type="button">📅</button>
+
+      <div class="gauge-wrap" aria-label="本日の推定CO2排出量">
+        <svg class="gauge" viewBox="0 0 120 120">
           <circle class="gauge-track" cx="60" cy="60" r="52"></circle>
           <circle id="gaugeFill" class="gauge-fill" cx="60" cy="60" r="52"></circle>
         </svg>
-                <div class="gauge-readout">
-                    <span id="gaugeValue">0.0</span>
-                    <span class="gauge-unit">kg CO2 / 日</span>
-                </div>
-            </div>
-        </header>
+        <div class="gauge-readout">
+          <span id="gaugeValue">0.0</span>
+          <span class="gauge-unit">kg CO2 / 日</span>
+        </div>
+      </div>
+    </header>
 
-        <!-- ===== CHAT LOG ===== -->
-        <main id="chatLog" class="chat-log" aria-live="polite"></main>
+    <!-- ===== HISTORY PANEL (toggled) ===== -->
+    <div id="historyPanel" class="history-panel" aria-live="polite"></div>
 
-        <!-- ===== QUICK REPLIES ===== -->
-        <footer class="reply-dock">
-            <div id="replyOptions" class="reply-options"></div>
-        </footer>
+    <!-- ===== CHAT LOG ===== -->
+    <main id="chatLog" class="chat-log" aria-live="polite"></main>
 
-    </div>
-    <script src="main.js"></script>
+    <!-- ===== QUICK REPLIES ===== -->
+    <footer class="reply-dock">
+      <div id="replyOptions" class="reply-options"></div>
+    </footer>
 
+  </div>
+
+  <script src="javascript/main.js"></script>
 </body>
-
 </html>
