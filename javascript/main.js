@@ -1,10 +1,4 @@
-/* =========================================================
-   CO2 Compass — rule-based "AI" carbon footprint chatbot
-   Not a real AI API — a scripted decision engine that talks
-   like one. Works fully offline, no API key needed.
-   ========================================================= */
-
-// ---- DOM refs ----
+// DOM refs 
 const chatLog       = document.getElementById('chatLog');
 const replyOptions  = document.getElementById('replyOptions');
 const gaugeFill     = document.getElementById('gaugeFill');
@@ -57,11 +51,7 @@ const WASTE = {
   rarely:    { label: 'あまりしない', kg: 1.0 }
 };
 
-/* =========================================================
-   Feature: AI reply variation
-   A small pool of natural acknowledgement phrases, picked at
-   random before each question so the bot feels less scripted.
-   ========================================================= */
+// AI reply variation
 const ACK_PHRASES = [
   'なるほど!', '了解!', 'いいね、次いこう。', 'OK、記録したよ。',
   'ふむふむ。', 'わかった!', 'そうなんだね。', 'メモしたよ📝'
@@ -70,13 +60,7 @@ function randomAck(){
   return ACK_PHRASES[Math.floor(Math.random() * ACK_PHRASES.length)];
 }
 
-/* =========================================================
-   Feature: History (localStorage)
-   One entry per calendar day; used for the history panel and
-   for comparing today's total against past averages.
-   ========================================================= */
-const HISTORY_KEY = 'co2compass_history_v1';
-
+//  Feature: History (localStorage)
 function todayStr(){
   return new Date().toISOString().slice(0, 10);
 }
@@ -100,9 +84,7 @@ function saveHistoryEntry(entry){
   return hist;
 }
 
-/* =========================================================
-   Conversation script
-   ========================================================= */
+// Conversation script
 let transportChoice = null;
 let currentStepId = null;
 
@@ -201,9 +183,8 @@ const steps = [
   }
 ];
 
-/* =========================================================
-   Chat rendering helpers
-   ========================================================= */
+
+  //  Chat rendering helpers
 function scrollToBottom(){
   requestAnimationFrame(() => {
     chatLog.scrollTop = chatLog.scrollHeight;
@@ -259,7 +240,7 @@ function renderOptions(options){
   replyOptions.innerHTML = '';
   options.forEach(opt => {
     const btn = document.createElement('button');
-    btn.className = 'reply-btn';
+    btn.className = opt.restart ? 'reply-btn restart' : 'reply-btn';
     if (opt.icon){
       const icon = document.createElement('span');
       icon.className = 'btn-icon';
@@ -305,9 +286,7 @@ function updateGauge(){
   gaugeFill.style.stroke = color;
 }
 
-/* =========================================================
-   Flow control
-   ========================================================= */
+  //  Flow control
 function goToStep(stepId){
   if (!stepId) return;
   if (stepId === 'result'){ return; } // handled after waste step finishes
@@ -320,6 +299,11 @@ function goToStep(stepId){
 }
 
 function selectOption(opt){
+  if (opt.showResultModal){
+    openResultModal();
+    return;
+  }
+
   clearOptions();
   addBubble(opt.label, 'user');
 
@@ -340,9 +324,7 @@ function selectOption(opt){
   }
 }
 
-/* =========================================================
-   Final result
-   ========================================================= */
+  //  Final result
 function rankFor(total){
   if (total <= 6)  return { grade: 'S', cls: '',        msg: 'とてもエコな1日！このまま続けよう🌿' };
   if (total <= 11) return { grade: 'A', cls: '',        msg: '良いバランスだね。あと一歩でSランク！' };
@@ -422,26 +404,34 @@ function showResult(){
   removeTyping();
   updateGauge();
 
-  const div = document.createElement('div');
-  div.className = 'bubble ai result';
-  div.innerHTML = `
-    <span class="ai-tag">AI 診断結果</span>
-    <div class="rank ${cls}">${grade}<span class="rank-label">ランク</span></div>
-    <p class="result-summary">本日の推定排出量: <strong>${state.total.toFixed(1)} kg CO2</strong></p>
-    <div class="result-breakdown">${chart}</div>
-    ${goalMessageHtml()}
-    ${historyCompareHtml(updatedHistory)}
-    <p class="result-message">${message}</p>
-    <p class="result-tip">${TIPS[tipKey]}</p>
-  `;
-  chatLog.appendChild(div);
-  scrollToBottom();
+  // short confirmation in the chat itself
+  addBubble('診断が完了したよ🎉 結果を見てみよう👇', 'ai');
 
-  renderOptions([{ label: 'もう一度診断する', icon: '↻', next: 'intro', restart: true }]);
-  const restartBtn = replyOptions.querySelector('.reply-btn');
-  if (restartBtn) {
-    restartBtn.classList.add('restart');
+  const body = document.getElementById('resultModalBody');
+  if (body){
+    body.innerHTML = `
+      <div class="rank ${cls}">${grade}<span class="rank-label">ランク</span></div>
+      <p class="result-summary">本日の推定排出量: <strong>${state.total.toFixed(1)} kg CO2</strong></p>
+      <div class="result-breakdown">${chart}</div>
+      ${goalMessageHtml()}
+      ${historyCompareHtml(updatedHistory)}
+      <p class="result-message">${message}</p>
+      <p class="result-tip">${TIPS[tipKey]}</p>
+      <div class="result-modal-actions">
+        <button id="resultRestartBtn" class="reply-btn restart" type="button">
+          <span class="btn-icon">↻</span><span class="btn-text">もう一度診断する</span>
+        </button>
+      </div>
+    `;
+    const restartBtn = document.getElementById('resultRestartBtn');
+    if (restartBtn) restartBtn.onclick = () => { closeResultModal(); restart(); };
   }
+  openResultModal();
+
+  renderOptions([
+    { label: '結果を見る', icon: '📊', showResultModal: true },
+    { label: 'もう一度診断する', icon: '↻', next: 'intro', restart: true }
+  ]);
 }
 
 function restart(){
@@ -450,47 +440,135 @@ function restart(){
   updateGauge();
   chatLog.innerHTML = '';
   clearOptions();
+  closeResultModal();
+  closeCalendarModal();
   goToStep('intro');
 }
 
-/* =========================================================
-   History panel (toggled from the header button)
-   ========================================================= */
-function renderHistoryPanel(){
-  const panel = document.getElementById('historyPanel');
-  if (!panel) return;
-  const hist = loadHistory().slice(-7);
+/* AI診断結果 modal */
+function openResultModal(){
+  const overlay = document.getElementById('resultOverlay');
+  if (!overlay) return;
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden', 'false');
+}
+function closeResultModal(){
+  const overlay = document.getElementById('resultOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('open');
+  overlay.setAttribute('aria-hidden', 'true');
+}
 
-  if (hist.length === 0){
-    panel.innerHTML = '<p class="history-empty">まだ記録がないよ。診断すると自動で記録されるよ📅</p>';
-    return;
+  //  Real calendar modal (history)
+let calendarCursor = new Date(); 
+
+function openCalendarModal(){
+  const overlay = document.getElementById('calendarOverlay');
+  if (!overlay) return;
+  calendarCursor = new Date();
+  renderCalendar();
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden', 'false');
+}
+function closeCalendarModal(){
+  const overlay = document.getElementById('calendarOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('open');
+  overlay.setAttribute('aria-hidden', 'true');
+}
+
+function dateKey(y, m, d){
+  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+function renderCalendar(){
+  const grid = document.getElementById('calendarGrid');
+  const label = document.getElementById('calMonthLabel');
+  const detail = document.getElementById('calendarDetail');
+  if (!grid || !label) return;
+
+  const y = calendarCursor.getFullYear();
+  const m = calendarCursor.getMonth();
+  label.textContent = `${y}年 ${m + 1}月`;
+
+  const hist = loadHistory();
+  const byDate = {};
+  hist.forEach(h => { byDate[h.date] = h; });
+
+  const firstWeekday = new Date(y, m, 1).getDay(); // 0=Sun
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const todayKey = todayStr();
+
+  let html = '';
+  for (let i = 0; i < firstWeekday; i++){
+    html += `<div class="cal-day empty"></div>`;
   }
-  const max = Math.max(...hist.map(h => h.total), 1);
-  panel.innerHTML = `
-    <div class="history-title">直近の記録（最大7日）</div>
-    <div class="history-bars">
-      ${hist.map(h => `
-        <div class="history-bar-col">
-          <div class="history-bar" style="height:${Math.max((h.total / max) * 100, 4)}%"></div>
-          <span class="history-bar-val">${h.total.toFixed(1)}</span>
-          <span class="history-bar-date">${h.date.slice(5)}</span>
-        </div>`).join('')}
-    </div>
+  for (let d = 1; d <= daysInMonth; d++){
+    const key = dateKey(y, m, d);
+    const entry = byDate[key];
+    const classes = ['cal-day'];
+    if (key === todayKey) classes.push('today');
+    if (entry) classes.push('has-entry');
+    let dot = '';
+    if (entry){
+      const rank = rankFor(entry.total).grade;
+      dot = `<span class="cal-dot rank-${rank}"></span>`;
+    }
+    html += `<button type="button" class="${classes.join(' ')}" data-date="${key}">${d}${dot}</button>`;
+  }
+  grid.innerHTML = html;
+
+  grid.querySelectorAll('.cal-day.has-entry').forEach(btn => {
+    btn.onclick = () => selectCalendarDay(btn.dataset.date, byDate[btn.dataset.date]);
+  });
+
+  if (detail) detail.innerHTML = '<p class="cd-empty">記録のある日をタップすると詳細が見られるよ📊</p>';
+}
+
+function selectCalendarDay(key, entry){
+  document.querySelectorAll('.cal-day.selected').forEach(el => el.classList.remove('selected'));
+  const btn = document.querySelector(`.cal-day[data-date="${key}"]`);
+  if (btn) btn.classList.add('selected');
+
+  const detail = document.getElementById('calendarDetail');
+  if (!detail || !entry) return;
+  const { grade } = rankFor(entry.total);
+  const chartHtml = Object.entries(entry.breakdown).map(([k, v]) => {
+    const max = Math.max(...Object.values(entry.breakdown), 0.01);
+    const pct = Math.max(Math.min((v / max) * 100, 100), v > 0 ? 3 : 0);
+    return `
+      <div class="chart-row">
+        <span class="chart-label">${CATEGORY_LABELS[k]}</span>
+        <div class="chart-track"><div class="chart-fill cat-${k}" style="width:${pct}%"></div></div>
+        <span class="chart-value">${v.toFixed(2)}kg</span>
+      </div>`;
+  }).join('');
+
+  detail.innerHTML = `
+    <p class="cd-date">${key}</p>
+    <p class="cd-total">合計 <strong>${entry.total.toFixed(1)} kg CO2</strong>（${grade}ランク）</p>
+    <div class="result-breakdown">${chartHtml}</div>
   `;
 }
 
-function toggleHistoryPanel(){
-  const panel = document.getElementById('historyPanel');
-  if (!panel) return;
-  const isOpen = panel.classList.toggle('open');
-  if (isOpen) renderHistoryPanel();
-}
-
-/* =========================================================
-   Boot
-   ========================================================= */
+  // Boot
 const historyToggleBtn = document.getElementById('historyToggle');
-if (historyToggleBtn) historyToggleBtn.onclick = toggleHistoryPanel;
+if (historyToggleBtn) historyToggleBtn.onclick = openCalendarModal;
+
+const calendarClose = document.getElementById('calendarClose');
+if (calendarClose) calendarClose.onclick = closeCalendarModal;
+const calendarOverlay = document.getElementById('calendarOverlay');
+if (calendarOverlay) calendarOverlay.onclick = (e) => { if (e.target === calendarOverlay) closeCalendarModal(); };
+
+const calPrev = document.getElementById('calPrev');
+if (calPrev) calPrev.onclick = () => { calendarCursor.setMonth(calendarCursor.getMonth() - 1); renderCalendar(); };
+const calNext = document.getElementById('calNext');
+if (calNext) calNext.onclick = () => { calendarCursor.setMonth(calendarCursor.getMonth() + 1); renderCalendar(); };
+
+const resultClose = document.getElementById('resultClose');
+if (resultClose) resultClose.onclick = closeResultModal;
+const resultOverlay = document.getElementById('resultOverlay');
+if (resultOverlay) resultOverlay.onclick = (e) => { if (e.target === resultOverlay) closeResultModal(); };
 
 updateGauge();
 goToStep('intro');
