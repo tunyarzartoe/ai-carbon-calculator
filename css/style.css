@@ -86,23 +86,23 @@ body{
 .brand-title sub{ color: var(--mint); font-size: 12px; }
 
 .history-toggle{
-  flex-shrink: 0;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  background: var(--bg-panel-2);
-  color: var(--text-hi);
-  font-size: 16px;
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--mint);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   margin-left: auto;
-  margin-right: 12px;
-  transition: border-color .2s ease, background .2s ease;
+  margin-right: 8px;
+  transition: background .18s ease, transform .06s ease, border-color .12s ease;
 }
-.history-toggle:hover{ border-color: var(--mint); background: rgba(61,255,176,.08); }
+.history-toggle svg{ display: block; width: 20px; height: 20px; }
+.history-toggle:hover{ background: rgba(61,255,176,.04); border-color: rgba(61,255,176,.08); }
+.history-toggle:active{ transform: translateY(1px) scale(.99); }
+.history-toggle:focus-visible{ outline: 2px solid rgba(51,199,232,.16); outline-offset: 2px; }
 
 .gauge-wrap{
   position: relative;
@@ -121,22 +121,6 @@ body{
   stroke: var(--mint);
   stroke-width: 10;
   stroke-linecap: round;
-.history-toggle{
-  display: inline-grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: var(--mint);
-  cursor: pointer;
-  transition: background .18s ease, transform .06s ease, border-color .12s ease;
-}
-.history-toggle svg{ display: block; width: 20px; height: 20px; }
-.history-toggle:hover{ background: rgba(61,255,176,.04); border-color: rgba(61,255,176,.08); }
-.history-toggle:active{ transform: translateY(1px) scale(.99); }
-.history-toggle:focus-visible{ outline: 2px solid rgba(51,199,232,.16); outline-offset: 2px; }
   stroke-dasharray: 326.7;
   stroke-dashoffset: 326.7;
   transition: stroke-dashoffset .8s cubic-bezier(.4,0,.2,1), stroke .8s ease;
