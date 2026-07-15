@@ -96,6 +96,7 @@ window.steps = [
 
 function goToStep(stepId){
   if (!stepId) return;
+  // console.log('flow.goToStep', stepId);
   if (stepId === 'result') return;
   const step = window.steps.find(s => s.id === stepId);
   if (!step) return;
@@ -106,6 +107,7 @@ function goToStep(stepId){
 }
 
 function selectOption(opt){
+  // console.log('flow.selectOption', opt.label || opt);
   if (opt.showResultModal){
     window.openResultModal();
     return;
@@ -131,6 +133,7 @@ function selectOption(opt){
 }
 
 function showResult(){
+  // console.log('flow.showResult', { total: window.state.total });
   const { grade, cls, msg } = window.rankFor(window.state.total);
   const chart = window.buildBreakdownChart(window.state.breakdown);
   const message = window.state.total === 0
@@ -163,6 +166,7 @@ function showResult(){
 }
 
 function restart(){
+  // console.log('flow.restart');
   window.state.total = 0;
   window.state.goal = null;
   window.state.breakdown = { transport: 0, electricity: 0, meal: 0, waste: 0 };
@@ -176,6 +180,7 @@ function restart(){
 }
 
 function initApp(){
+  // console.log('flow.initApp');
   window.updateGauge();
   goToStep('intro');
 }

@@ -1,20 +1,23 @@
 function openResultModal(){
+  // console.log('modals.openResultModal');
   const overlay = document.getElementById('resultOverlay');
-  if (!overlay) return;
+  if (!overlay) return console.log('modals.openResultModal: overlay not found');
   overlay.classList.add('open');
   overlay.setAttribute('aria-hidden', 'false');
 }
 
 function closeResultModal(){
+  // console.log('modals.closeResultModal');
   const overlay = document.getElementById('resultOverlay');
-  if (!overlay) return;
+  if (!overlay) return console.log('modals.closeResultModal: overlay not found');
   overlay.classList.remove('open');
   overlay.setAttribute('aria-hidden', 'true');
 }
 
 function openCalendarModal(){
+  // console.log('modals.openCalendarModal');
   const overlay = document.getElementById('calendarOverlay');
-  if (!overlay) return;
+  if (!overlay) return console.log('modals.openCalendarModal: overlay not found');
   window.calendarCursor = new Date();
   renderCalendar();
   overlay.classList.add('open');
@@ -22,8 +25,9 @@ function openCalendarModal(){
 }
 
 function closeCalendarModal(){
+  // console.log('modals.closeCalendarModal');
   const overlay = document.getElementById('calendarOverlay');
-  if (!overlay) return;
+  if (!overlay) return console.log('modals.closeCalendarModal: overlay not found');
   overlay.classList.remove('open');
   overlay.setAttribute('aria-hidden', 'true');
 }
@@ -68,9 +72,10 @@ function renderCalendar(){
     html += `<button type="button" class="${classes.join(' ')}" data-date="${key}">${d}${dot}</button>`;
   }
   grid.innerHTML = html;
+  console.log('modals.renderCalendar: populated', daysInMonth, 'days (firstWeekday', firstWeekday + ')');
 
   grid.querySelectorAll('.cal-day.has-entry').forEach(btn => {
-    btn.onclick = () => selectCalendarDay(btn.dataset.date, byDate[btn.dataset.date]);
+    btn.onclick = () => { console.log('modals.openDay', btn.dataset.date); selectCalendarDay(btn.dataset.date, byDate[btn.dataset.date]); };
   });
 
   if (detail) detail.innerHTML = '<p class="cd-empty">記録のある日をタップすると詳細が見られるよ📊</p>';

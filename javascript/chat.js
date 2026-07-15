@@ -25,6 +25,7 @@ function addBubble(text, cls){
 }
 
 function showTyping(){
+  // console.log('chat.showTyping');
   const el = document.createElement('div');
   el.className = 'typing';
   el.id = 'typingIndicator';
@@ -37,9 +38,11 @@ function showTyping(){
 function removeTyping(){
   const el = document.getElementById('typingIndicator');
   if (el) el.remove();
+  // else console.log('chat.removeTyping: no indicator found');
 }
 
 function aiSpeak(lines, done){
+  // console.log('chat.aiSpeak start', Array.isArray(lines) ? lines.slice(0,3) : lines);
   const queue = Array.isArray(lines) ? [...lines] : [lines];
   function next(){
     if (queue.length === 0){ if (done) done(); return; }
@@ -54,6 +57,7 @@ function aiSpeak(lines, done){
 }
 
 function renderOptions(options, onSelect){
+  console.log('chat.renderOptions', options.map(o => o.label));
   replyOptions.innerHTML = '';
   options.forEach(opt => {
     const btn = document.createElement('button');

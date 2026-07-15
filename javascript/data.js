@@ -46,7 +46,9 @@ window.todayStr = function(){
 window.loadHistory = function(){
   try {
     const raw = localStorage.getItem(window.HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const parsed = raw ? JSON.parse(raw) : [];
+    // console.log('data.loadHistory', parsed.length, 'entries');
+    return parsed;
   } catch (e){
     return [];
   }
@@ -59,6 +61,7 @@ window.saveHistoryEntry = function(entry){
   hist.sort((a, b) => a.date.localeCompare(b.date));
   hist = hist.slice(-30);
   try { localStorage.setItem(window.HISTORY_KEY, JSON.stringify(hist)); } catch (e){}
+  // console.log('data.saveHistoryEntry', entry.date, entry.total);
   return hist;
 };
 
