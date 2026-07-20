@@ -57,10 +57,10 @@ function aiSpeak(lines, done){
 }
 
 function renderOptions(options, onSelect){
-  console.log('chat.renderOptions', options.map(o => o.label));
   replyOptions.innerHTML = '';
   options.forEach(opt => {
     const btn = document.createElement('button');
+    btn.type = 'button';
     btn.className = opt.restart ? 'reply-btn restart' : 'reply-btn';
     if (opt.icon){
       const icon = document.createElement('span');
@@ -85,8 +85,9 @@ function renderOptions(options, onSelect){
 function clearOptions(){ replyOptions.innerHTML = ''; }
 
 function addResult(category, kg, note){
-  window.state.breakdown[category] += kg;
-  window.state.total = +(window.state.total + kg).toFixed(2);
+  window.state.breakdown[category] = kg;
+  const sum = Object.values(window.state.breakdown).reduce((s, v) => s + v, 0);
+  window.state.total = +sum.toFixed(2);
   updateGauge();
   if (note){
     addBubble(note, 'ai');
@@ -94,15 +95,16 @@ function addResult(category, kg, note){
 }
 
 function updateGauge(){
-  const ratio = Math.min(window.state.total / 30, 1);
+  const total = Math.max(0, Number(window.state.total) || 0);
+  const ratio = Math.min(total / 30, 1);
   const offset = 326.7 * (1 - ratio);
   gaugeFill.style.strokeDashoffset = offset;
-  gaugeValueEl.textContent = window.state.total.toFixed(1);
+  gaugeValueEl.textContent = total.toFixed(1);
 
   let color = 'var(--mint)';
-  if (window.state.total > 16) color = 'var(--danger)';
-  else if (window.state.total > 11) color = 'var(--warn)';
-  else if (window.state.total > 6) color = 'var(--cyan)';
+  if (total > 16) color = 'var(--danger)';
+  else if (total > 11) color = 'var(--warn)';
+  else if (total > 6) color = 'var(--cyan)';
   gaugeFill.style.stroke = color;
 }
 

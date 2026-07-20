@@ -29,11 +29,18 @@ window.loadGamifyState = function(){
       maxStreak: 0,
       bestGradeRank: undefined,
       quizCorrectCount: 0,
+      weeklyKey: null,
+      weeklyCleared: false,
+      weeklyClearedCount: 0,
       badges: [],
       certId: null
     }, parsed);
   } catch (e){
-    return { xp: 0, diagnosisCount: 0, sRankCount: 0, maxStreak: 0, bestGradeRank: undefined, quizCorrectCount: 0, badges: [], certId: null };
+    return {
+      xp: 0, diagnosisCount: 0, sRankCount: 0, maxStreak: 0, bestGradeRank: undefined,
+      quizCorrectCount: 0, weeklyKey: null, weeklyCleared: false, weeklyClearedCount: 0,
+      badges: [], certId: null
+    };
   }
 };
 
@@ -53,8 +60,73 @@ window.BADGES = [
   { id: 'lv5',      icon: '⭐',   title: 'Lv.5 到達',      desc: 'レベル5に到達した',           check: g => window.levelFor(g.xp) >= 5 },
   { id: 'lv10',     icon: '🌟',   title: 'Lv.10 到達',     desc: 'レベル10に到達した',          check: g => window.levelFor(g.xp) >= 10 },
   { id: 'master',   icon: '🌍',   title: 'エコの達人',     desc: '累計30回診断した',            check: g => g.diagnosisCount >= 30 },
-  { id: 'quiz10',   icon: '🧠',   title: 'クイズ博士',     desc: 'クイズに10回正解した',        check: g => g.quizCorrectCount >= 10 }
+  { id: 'quiz10',   icon: '🧠',   title: 'クイズ博士',     desc: 'クイズに10回正解した',        check: g => g.quizCorrectCount >= 10 },
+  { id: 'weekly5',  icon: '🎯',   title: 'チャレンジャー', desc: '週間チャレンジを5回クリアした', check: g => (g.weeklyClearedCount || 0) >= 5 }
 ];
+
+/* =========================================================
+   週替わりチャレンジ
+   同じ週（月曜始まり）は全員同じチャレンジになるよう、
+   ISO週キーからチャレンジ配列のインデックスを決定的に選ぶ。
+   ========================================================= */
+window.WEEKLY_CHALLENGES = [
+  { icon: '🚌', text: '今週は移動のCO2を1回1kg以下に抑えよう', check: (b) => b.transport <= 1 },
+  { icon: '🥗', text: '今週は野菜中心の食事を選んでみよう',     check: (b) => b.meal <= 2 },
+  { icon: '💡', text: '今週は電気の使用を抑えてみよう',         check: (b) => b.electricity <= 1.5 },
+  { icon: '♻️', text: '今週はゴミを必ず分別しよう',             check: (b) => b.waste <= 0.3 },
+  { icon: '🎯', text: '今週は合計10kg以下を目指そう',           check: (b, total) => total <= 10 },
+  { icon: '🚶', text: '今週は徒歩・自転車での移動に挑戦しよう', check: (b) => b.transport === 0 }
+];
+
+function isoWeekKey(date){
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
+function hashStr(str){
+  let h = 0;
+  for (let i = 0; i < str.length; i++){
+    h = (h * 31 + str.charCodeAt(i)) >>> 0;
+  }
+  return h;
+}
+
+window.getWeeklyChallenge = function(){
+  const key = isoWeekKey(new Date());
+  const idx = hashStr(key) % window.WEEKLY_CHALLENGES.length;
+  return Object.assign({ key }, window.WEEKLY_CHALLENGES[idx]);
+};
+
+/**
+ * 診断完了時に呼ぶ。今週のチャレンジ条件を満たしていれば、
+ * 週1回だけボーナスXPを加算してクリア扱いにする。
+ */
+window.evaluateWeeklyChallenge = function(breakdown, total){
+  const challenge = window.getWeeklyChallenge();
+  const g = window.loadGamifyState();
+
+  if (g.weeklyKey !== challenge.key){
+    g.weeklyKey = challenge.key;
+    g.weeklyCleared = false;
+  }
+
+  const result = { challenge, justCleared: false, bonusXp: 0 };
+  if (!g.weeklyCleared && challenge.check(breakdown, total)){
+    const bonus = 20;
+    g.weeklyCleared = true;
+    g.weeklyClearedCount = (g.weeklyClearedCount || 0) + 1;
+    g.xp += bonus;
+    result.justCleared = true;
+    result.bonusXp = bonus;
+  }
+
+  window.saveGamifyState(g);
+  return result;
+};
 
 function makeCertId(){
   const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -109,6 +181,7 @@ window.getCertificateData = function(){
 
 /* 認定証・バッジモーダルの中身を描画 */
 window.renderAchievements = function(){
+  window.renderGrowthTree();
   const certData = window.getCertificateData();
 
   const card = document.getElementById('certificateCard');
@@ -131,6 +204,18 @@ window.renderAchievements = function(){
       </div>`;
   }
 
+  const weeklyEl = document.getElementById('weeklyChallengeCard');
+  if (weeklyEl){
+    const challenge = window.getWeeklyChallenge();
+    const g2 = window.loadGamifyState();
+    const cleared = g2.weeklyKey === challenge.key && g2.weeklyCleared;
+    weeklyEl.innerHTML = `
+      <p class="weekly-heading">${challenge.icon} 今週のチャレンジ</p>
+      <p class="weekly-text">${challenge.text}</p>
+      <p class="weekly-status ${cleared ? 'cleared' : ''}">${cleared ? '✅ クリア済み' : '診断すると自動で判定されるよ'}</p>
+    `;
+  }
+
   const grid = document.getElementById('badgesGrid');
   if (grid){
     const g = window.loadGamifyState();
@@ -150,6 +235,28 @@ window.renderAchievements = function(){
   if (shareBtn) shareBtn.onclick = () => window.shareCertificateImage(certData);
   const downloadBtn = document.getElementById('certDownloadBtn');
   if (downloadBtn) downloadBtn.onclick = () => window.downloadCertificateImage(certData);
+
+  const exportBtn = document.getElementById('exportDataBtn');
+  if (exportBtn) exportBtn.onclick = () => window.downloadBackupFile();
+
+  const importBtn = document.getElementById('importDataBtn');
+  const importInput = document.getElementById('importFileInput');
+  if (importBtn && importInput){
+    importBtn.onclick = () => importInput.click();
+    importInput.onchange = (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      window.importBackupFile(file, (ok, message) => {
+        importInput.value = '';
+        if (ok){
+          alert(`${message} ページを再読み込みして反映するね。`);
+          location.reload();
+        } else {
+          alert(message);
+        }
+      });
+    };
+  }
 };
 
 window.levelFor = function(xp){
@@ -160,13 +267,92 @@ window.xpIntoLevel = function(xp){
   return xp % XP_PER_LEVEL;
 };
 
+/* =========================================================
+   成長する木（レベルに応じて種→若木→大木→満開に育つビジュアル）
+   ========================================================= */
+window.GROWTH_STAGES = [
+  { id: 'seed',   minLevel: 1,  label: '🌱 種' },
+  { id: 'sprout', minLevel: 3,  label: '🌿 芽ばえ' },
+  { id: 'young',  minLevel: 6,  label: '🌳 若木' },
+  { id: 'tree',   minLevel: 10, label: '🌲 大木' },
+  { id: 'bloom',  minLevel: 15, label: '🌸 満開' }
+];
+
+window.getGrowthStage = function(level){
+  let current = window.GROWTH_STAGES[0];
+  window.GROWTH_STAGES.forEach(s => { if (level >= s.minLevel) current = s; });
+  return current;
+};
+
+function nextGrowthStage(stageId){
+  const idx = window.GROWTH_STAGES.findIndex(s => s.id === stageId);
+  return window.GROWTH_STAGES[idx + 1] || null;
+}
+
+window.renderGrowthTreeSvg = function(stageId){
+  const ground = `<rect x="18" y="96" width="84" height="6" rx="3" fill="var(--border)"></rect>`;
+  let parts = '';
+
+  if (stageId === 'seed'){
+    parts = `
+      <ellipse cx="60" cy="93" rx="11" ry="5" fill="var(--bg-panel-2)"></ellipse>
+      <circle cx="60" cy="88" r="7" fill="var(--mint)"></circle>`;
+  } else if (stageId === 'sprout'){
+    parts = `
+      <line x1="60" y1="96" x2="60" y2="72" stroke="var(--mint)" stroke-width="4" stroke-linecap="round"></line>
+      <ellipse cx="49" cy="75" rx="11" ry="6" fill="var(--mint)" transform="rotate(-30 49 75)"></ellipse>
+      <ellipse cx="71" cy="75" rx="11" ry="6" fill="var(--mint)" transform="rotate(30 71 75)"></ellipse>`;
+  } else if (stageId === 'young'){
+    parts = `
+      <line x1="60" y1="96" x2="60" y2="54" stroke="var(--text-dim)" stroke-width="5" stroke-linecap="round"></line>
+      <circle cx="60" cy="48" r="24" fill="var(--mint)" opacity="0.92"></circle>`;
+  } else if (stageId === 'tree'){
+    parts = `
+      <line x1="60" y1="96" x2="60" y2="40" stroke="var(--text-dim)" stroke-width="6" stroke-linecap="round"></line>
+      <circle cx="43" cy="44" r="21" fill="var(--mint)" opacity="0.85"></circle>
+      <circle cx="77" cy="44" r="21" fill="var(--mint)" opacity="0.85"></circle>
+      <circle cx="60" cy="28" r="26" fill="var(--mint)"></circle>`;
+  } else if (stageId === 'bloom'){
+    parts = `
+      <line x1="60" y1="96" x2="60" y2="40" stroke="var(--text-dim)" stroke-width="6" stroke-linecap="round"></line>
+      <circle cx="43" cy="44" r="21" fill="var(--mint)" opacity="0.85"></circle>
+      <circle cx="77" cy="44" r="21" fill="var(--mint)" opacity="0.85"></circle>
+      <circle cx="60" cy="28" r="26" fill="var(--mint)"></circle>
+      <circle cx="42" cy="34" r="3.5" fill="var(--cyan)"></circle>
+      <circle cx="80" cy="38" r="3.5" fill="var(--cyan)"></circle>
+      <circle cx="60" cy="14" r="3.5" fill="var(--cyan)"></circle>
+      <circle cx="68" cy="56" r="3.5" fill="var(--cyan)"></circle>
+      <circle cx="38" cy="54" r="3.5" fill="var(--cyan)"></circle>`;
+  }
+
+  return `<svg viewBox="0 0 120 110" aria-hidden="true" focusable="false">${ground}${parts}</svg>`;
+};
+
+window.renderGrowthTree = function(){
+  const el = document.getElementById('growthTreeCard');
+  if (!el) return;
+  const g = window.loadGamifyState();
+  const level = window.levelFor(g.xp);
+  const stage = window.getGrowthStage(level);
+  const next = nextGrowthStage(stage.id);
+  const nextLine = next
+    ? `Lv.${next.minLevel}で${next.label}に成長するよ`
+    : '最大まで成長したよ！';
+
+  el.innerHTML = `
+    <div class="growth-tree-visual">${window.renderGrowthTreeSvg(stage.id)}</div>
+    <p class="growth-tree-label">${stage.label}</p>
+    <p class="growth-tree-next">${nextLine}</p>
+  `;
+};
+
 /* 連続診断日数（今日を含む）を history から計算 */
 window.computeStreak = function(history){
   const dates = new Set(history.map(h => h.date));
   let streak = 0;
   const cursor = new Date();
   while (true){
-    const key = cursor.toISOString().slice(0, 10);
+    const key = window.formatLocalDate(cursor);
     if (dates.has(key)){
       streak++;
       cursor.setDate(cursor.getDate() - 1);

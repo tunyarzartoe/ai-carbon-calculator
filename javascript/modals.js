@@ -1,35 +1,46 @@
+function closeAllModals(){
+  closeResultModal();
+  closeCalendarModal();
+  closeRankingModal();
+  closeAchievementsModal();
+}
+
+function setTab(id){
+  if (window.setActiveTab) window.setActiveTab(id);
+}
+
 function openResultModal(){
-  // console.log('modals.openResultModal');
+  closeAllModals();
   const overlay = document.getElementById('resultOverlay');
-  if (!overlay) return console.log('modals.openResultModal: overlay not found');
+  if (!overlay) return;
   overlay.classList.add('open');
   overlay.setAttribute('aria-hidden', 'false');
 }
 
 function closeResultModal(){
-  // console.log('modals.closeResultModal');
   const overlay = document.getElementById('resultOverlay');
-  if (!overlay) return console.log('modals.closeResultModal: overlay not found');
+  if (!overlay) return;
   overlay.classList.remove('open');
   overlay.setAttribute('aria-hidden', 'true');
 }
 
 function openCalendarModal(){
-  // console.log('modals.openCalendarModal');
+  closeAllModals();
   const overlay = document.getElementById('calendarOverlay');
-  if (!overlay) return console.log('modals.openCalendarModal: overlay not found');
+  if (!overlay) return;
   window.calendarCursor = new Date();
   renderCalendar();
   overlay.classList.add('open');
   overlay.setAttribute('aria-hidden', 'false');
+  setTab('navHistory');
 }
 
 function closeCalendarModal(){
-  // console.log('modals.closeCalendarModal');
   const overlay = document.getElementById('calendarOverlay');
-  if (!overlay) return console.log('modals.closeCalendarModal: overlay not found');
+  if (!overlay) return;
   overlay.classList.remove('open');
   overlay.setAttribute('aria-hidden', 'true');
+  setTab('navChat');
 }
 
 function dateKey(y, m, d){
@@ -40,6 +51,8 @@ function renderCalendar(){
   const grid = document.getElementById('calendarGrid');
   const label = document.getElementById('calMonthLabel');
   const detail = document.getElementById('calendarDetail');
+  const summaryEl = document.getElementById('calendarSummary');
+  const trendEl = document.getElementById('calendarTrend');
   if (!grid || !label) return;
 
   const y = window.calendarCursor.getFullYear();
@@ -53,6 +66,49 @@ function renderCalendar(){
   const firstWeekday = new Date(y, m, 1).getDay();
   const daysInMonth = new Date(y, m + 1, 0).getDate();
   const todayKey = window.todayStr();
+
+  if (summaryEl){
+    const summary = window.computeMonthlySummary(hist, y, m);
+    if (!summary){
+      summaryEl.innerHTML = '<p class="calendar-summary-empty">この月はまだ記録がないよ</p>';
+    } else {
+      const bestDay = summary.best.date.slice(8, 10);
+      const worstDay = summary.worst.date.slice(8, 10);
+      const momHtml = window.computeMonthOverMonthHtml(hist, y, m);
+      const weekdayInsight = window.computeWeekdayInsight(hist);
+      const insightHtml = weekdayInsight
+        ? `<p class="calendar-insight">💡 ${weekdayInsight.worstDay}曜日は平均${weekdayInsight.worstAvg}kgと多め。${weekdayInsight.bestDay}曜日は平均${weekdayInsight.bestAvg}kgと少なめだよ。</p>`
+        : '';
+      summaryEl.innerHTML = `
+        <div class="calendar-stats">
+          <div class="calendar-stat"><span class="calendar-stat-value">${summary.avg}</span><span class="calendar-stat-label">平均kg/日</span></div>
+          <div class="calendar-stat"><span class="calendar-stat-value">${bestDay}日</span><span class="calendar-stat-label">ベスト(${summary.best.total.toFixed(1)}kg)</span></div>
+          <div class="calendar-stat"><span class="calendar-stat-value">${worstDay}日</span><span class="calendar-stat-label">ワースト(${summary.worst.total.toFixed(1)}kg)</span></div>
+          <div class="calendar-stat"><span class="calendar-stat-value">${summary.count}</span><span class="calendar-stat-label">記録日数</span></div>
+        </div>
+        ${momHtml}
+        ${insightHtml}
+      `;
+    }
+  }
+
+  if (trendEl){
+    const totals = [];
+    for (let d = 1; d <= daysInMonth; d++){
+      const entry = byDate[dateKey(y, m, d)];
+      totals.push(entry ? entry.total : null);
+    }
+    const max = Math.max(...totals.filter(t => t !== null), 1);
+    trendEl.innerHTML = totals.map((t, i) => {
+      const d = i + 1;
+      if (t === null){
+        return `<div class="trend-bar empty" title="${d}日: 記録なし"><div class="trend-bar-fill" style="height:100%"></div></div>`;
+      }
+      const pct = Math.max(8, Math.min(100, (t / max) * 100));
+      const rank = window.rankFor(t).grade;
+      return `<div class="trend-bar rank-${rank}" title="${d}日: ${t.toFixed(1)}kg"><div class="trend-bar-fill" style="height:${pct}%"></div></div>`;
+    }).join('');
+  }
 
   let html = '';
   for (let i = 0; i < firstWeekday; i++){
@@ -72,10 +128,9 @@ function renderCalendar(){
     html += `<button type="button" class="${classes.join(' ')}" data-date="${key}">${d}${dot}</button>`;
   }
   grid.innerHTML = html;
-  console.log('modals.renderCalendar: populated', daysInMonth, 'days (firstWeekday', firstWeekday + ')');
 
   grid.querySelectorAll('.cal-day.has-entry').forEach(btn => {
-    btn.onclick = () => { console.log('modals.openDay', btn.dataset.date); selectCalendarDay(btn.dataset.date, byDate[btn.dataset.date]); };
+    btn.onclick = () => selectCalendarDay(btn.dataset.date, byDate[btn.dataset.date]);
   });
 
   if (detail) detail.innerHTML = '<p class="cd-empty">記録のある日をタップすると詳細が見られるよ📊</p>';
@@ -103,6 +158,42 @@ function moveCalendarMonth(offset){
   renderCalendar();
 }
 
+function openRankingModal(){
+  closeAllModals();
+  const overlay = document.getElementById('rankingOverlay');
+  if (!overlay) return;
+  window.renderRanking();
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden', 'false');
+  setTab('navRanking');
+}
+
+function closeRankingModal(){
+  const overlay = document.getElementById('rankingOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('open');
+  overlay.setAttribute('aria-hidden', 'true');
+  setTab('navChat');
+}
+
+function openAchievementsModal(){
+  closeAllModals();
+  const overlay = document.getElementById('achievementsOverlay');
+  if (!overlay) return;
+  window.renderAchievements();
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden', 'false');
+  setTab('navAchievements');
+}
+
+function closeAchievementsModal(){
+  const overlay = document.getElementById('achievementsOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('open');
+  overlay.setAttribute('aria-hidden', 'true');
+  setTab('navChat');
+}
+
 window.openResultModal = openResultModal;
 window.closeResultModal = closeResultModal;
 window.openCalendarModal = openCalendarModal;
@@ -110,3 +201,8 @@ window.closeCalendarModal = closeCalendarModal;
 window.renderCalendar = renderCalendar;
 window.selectCalendarDay = selectCalendarDay;
 window.moveCalendarMonth = moveCalendarMonth;
+window.openRankingModal = openRankingModal;
+window.closeRankingModal = closeRankingModal;
+window.openAchievementsModal = openAchievementsModal;
+window.closeAchievementsModal = closeAchievementsModal;
+window.closeAllModals = closeAllModals;
