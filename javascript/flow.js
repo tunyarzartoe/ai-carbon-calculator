@@ -123,16 +123,32 @@ window.steps = [
 ];
 
 function goToStep(stepId){
-  if (!stepId) return;
-  if (stepId === 'result') return;
+  if (!stepId){
+    console.warn('flow.goToStep called without stepId');
+    return;
+  }
+  if (stepId === 'result'){
+    console.warn('flow.goToStep called with reserved stepId result');
+    return;
+  }
   const step = window.steps.find(s => s.id === stepId);
-  if (!step) return;
+  if (!step){
+    console.error('flow.goToStep could not find step', stepId);
+    return;
+  }
   window.currentStepId = stepId;
   window.clearOptions();
+  console.debug('flow.goToStep', { stepId, currentStepId: window.currentStepId });
 
   if (stepId === 'quiz'){
+    window.currentQuiz = window.pickRandomQuiz();
     const lines = [window.randomAck(), ...step.ai()];
     const quiz = window.currentQuiz;
+    if (!quiz){
+      console.error('flow.goToStep quiz step could not pick a quiz');
+      showResult();
+      return;
+    }
     const letters = ['Ⓐ', 'Ⓑ', 'Ⓒ'];
     const quizOptions = quiz.choices.map((choice, i) => ({
       label: choice.label,
@@ -140,6 +156,7 @@ function goToStep(stepId){
       correct: choice.correct,
       isQuizAnswer: true
     }));
+    console.debug('flow.goToStep quiz', { quizIndex: window.lastQuizIndex, quiz: quiz.q });
     window.aiSpeak(lines, () => window.renderOptions(quizOptions, selectOption));
     return;
   }
@@ -149,28 +166,45 @@ function goToStep(stepId){
 }
 
 function selectOption(opt){
+  console.debug('flow.selectOption', { opt, currentStepId: window.currentStepId });
   if (opt.isQuizAnswer){
     window.clearOptions();
+    
+    // Remove quiz header if present
+    const quizHeader = document.querySelector('.quiz-header');
+    if (quizHeader) quizHeader.remove();
+    
     window.addBubble(opt.label, 'user');
     window.lastQuizCorrect = opt.correct;
-    const fact = window.currentQuiz.fact;
+    const fact = window.currentQuiz ? window.currentQuiz.fact : 'クイズ情報が見つかりませんでした。';
+    
     const resultLine = opt.correct
-      ? `🎉 正解！ ${fact}`
-      : `😅 おしい、不正解。${fact}`;
+      ? `🎉 正解！`
+      : `😅 おしい、不正解。`;
+    
+    // Show feedback with enhanced styling
+    const feedbackDiv = document.createElement('div');
+    feedbackDiv.className = `quiz-feedback ${opt.correct ? '' : 'incorrect'}`;
+    const feedbackContent = document.createElement('div');
+    feedbackContent.innerHTML = `${resultLine}<div class="quiz-fact">${fact}</div>`;
+    feedbackDiv.appendChild(feedbackContent);
+    document.getElementById('chatLog').appendChild(feedbackDiv);
+    
     setTimeout(() => {
-      window.aiSpeak([resultLine], () => {
-        setTimeout(showResult, 300);
-      });
+      document.getElementById('chatLog').scrollTop = document.getElementById('chatLog').scrollHeight;
+      setTimeout(showResult, 500);
     }, 300);
     return;
   }
 
   if (opt.showResultModal){
+    console.debug('flow.selectOption opening result modal');
     window.openResultModal();
     return;
   }
 
   if (opt.showAchievements){
+    console.debug('flow.selectOption opening achievements modal');
     window.openAchievementsModal();
     return;
   }
@@ -180,21 +214,33 @@ function selectOption(opt){
 
   if (opt.value !== undefined){
     const currentStep = window.steps.find(s => s.id === window.currentStepId) || window.steps.find(s => s.options.some(o => o === opt));
-    if (currentStep && currentStep.onAnswer) currentStep.onAnswer(opt.value);
+    if (!currentStep){
+      console.warn('flow.selectOption could not determine currentStep for answer', opt);
+    }
+    if (currentStep && currentStep.onAnswer){
+      console.debug('flow.selectOption executing onAnswer', { stepId: currentStep.id, value: opt.value });
+      currentStep.onAnswer(opt.value);
+    }
   }
 
   if (opt.restart){
+    console.debug('flow.selectOption restarting flow');
     return setTimeout(restart, 300);
   }
 
   if (opt.next === 'result'){
+    console.debug('flow.selectOption navigating to result');
     setTimeout(showResult, 400);
-  } else {
+  } else if (opt.next){
+    console.debug('flow.selectOption navigating to next step', opt.next);
     setTimeout(() => goToStep(opt.next), 300);
+  } else {
+    console.warn('flow.selectOption has no next action', opt);
   }
 }
 
 function showResult(){
+  console.debug('flow.showResult start', { state: window.state, currentStepId: window.currentStepId, lastQuizCorrect: window.lastQuizCorrect });
   const { grade, cls, msg } = window.rankFor(window.state.total);
   const chart = window.buildBreakdownChart(window.state.breakdown);
   const message = window.state.total === 0
@@ -215,6 +261,7 @@ function showResult(){
   window.lastQuizCorrect = undefined;
   const weeklyResult = window.evaluateWeeklyChallenge(window.state.breakdown, window.state.total);
   const newBadges = window.checkAchievements(grade, streak, quizWasCorrect);
+  console.debug('flow.showResult summary', { grade, msg, streak, xpResult, weeklyResult, newBadges, updatedHistoryLength: updatedHistory.length });
   window.updateLevelBadge();
   window.vibrateForGrade(grade);
 
@@ -285,12 +332,16 @@ function showResult(){
 }
 
 function restart(){
+  console.debug('flow.restart resetting state');
   window.state.total = 0;
   window.state.goal = null;
   window.state.breakdown = { transport: 0, electricity: 0, meal: 0, waste: 0 };
   window.transportChoice = null;
+  window.lastQuizCorrect = undefined;
+  window.currentQuiz = null;
   window.updateGauge();
-  document.getElementById('chatLog').innerHTML = '';
+  const chatLogEl = document.getElementById('chatLog');
+  if (chatLogEl) chatLogEl.innerHTML = '';
   window.clearOptions();
   window.closeResultModal();
   window.closeCalendarModal();

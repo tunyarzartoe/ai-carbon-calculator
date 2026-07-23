@@ -104,53 +104,131 @@ window.vibrateForBadge = function(){
 /* paiza の認定証のように、レベル/ランク/バッジ実績を1枚の画像として
    保存・シェアできるようにする。ライブラリ不要、すべて Canvas 2D で描画。 */
 
+function roundedRectPath(ctx, x, y, w, h, r){
+  ctx.beginPath();
+  if (ctx.roundRect){
+    ctx.roundRect(x, y, w, h, r);
+  } else {
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+}
+
+/* 認定証の中央上部に置く「シール」マーク。ブランドのコンパス/リーフのモチーフを
+   絵文字ではなくベクターパスで描く（環境によって絵文字のレンダリングが崩れるのを防ぐため）。 */
+function drawCertificateSeal(ctx, cx, cy, r){
+  ctx.save();
+  ctx.strokeStyle = 'rgba(51,199,232,0.55)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(61,255,176,0.55)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 5]);
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.8, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // leaf
+  ctx.fillStyle = '#3DFFB0';
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - r * 0.58);
+  ctx.bezierCurveTo(cx + r * 0.5, cy - r * 0.3, cx + r * 0.5, cy + r * 0.14, cx, cy + r * 0.2);
+  ctx.bezierCurveTo(cx - r * 0.5, cy + r * 0.14, cx - r * 0.5, cy - r * 0.3, cx, cy - r * 0.58);
+  ctx.fill();
+
+  // compass needle
+  ctx.fillStyle = 'rgba(51,199,232,0.8)';
+  ctx.beginPath();
+  ctx.moveTo(cx - r * 0.16, cy + r * 0.2);
+  ctx.lineTo(cx + r * 0.16, cy + r * 0.2);
+  ctx.lineTo(cx, cy + r * 0.75);
+  ctx.closePath();
+  ctx.fill();
+
+  // center pin
+  ctx.beginPath();
+  ctx.arc(cx, cy + r * 0.2, r * 0.1, 0, Math.PI * 2);
+  ctx.fillStyle = '#0A0F0D';
+  ctx.fill();
+  ctx.strokeStyle = '#E7F5EF';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.restore();
+}
+
 window.generateCertificateCanvas = function(certData){
   const canvas = document.createElement('canvas');
-  const W = 1000, H = 640;
+  const W = 1000, H = 700;
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // background
+  // page background
   ctx.fillStyle = '#0A0F0D';
   ctx.fillRect(0, 0, W, H);
 
-  // grid atmosphere (subtle)
-  ctx.strokeStyle = 'rgba(34,50,44,0.5)';
-  ctx.lineWidth = 1;
-  for (let x = 0; x < W; x += 28){ ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-  for (let y = 0; y < H; y += 28){ ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+  // gradient frame (outer)
+  const frameGrad = ctx.createLinearGradient(0, 0, W, H);
+  frameGrad.addColorStop(0, '#3DFFB0');
+  frameGrad.addColorStop(0.55, '#33C7E8');
+  frameGrad.addColorStop(1, '#3DFFB0');
+  roundedRectPath(ctx, 20, 20, W - 40, H - 40, 28);
+  ctx.strokeStyle = frameGrad;
+  ctx.lineWidth = 5;
+  ctx.stroke();
 
-  // borders
-  ctx.strokeStyle = '#3DFFB0';
-  ctx.lineWidth = 4;
-  ctx.strokeRect(24, 24, W - 48, H - 48);
-  ctx.strokeStyle = '#22322C';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(40, 40, W - 80, H - 80);
+  // inner panel
+  roundedRectPath(ctx, 34, 34, W - 68, H - 68, 22);
+  ctx.fillStyle = '#111917';
+  ctx.fill();
+  ctx.clip();
+
+  // subtle dot-grid texture inside the panel
+  ctx.fillStyle = 'rgba(34,50,44,0.6)';
+  for (let x = 50; x < W - 50; x += 26){
+    for (let y = 50; y < H - 50; y += 26){
+      ctx.fillRect(x, y, 1, 1);
+    }
+  }
 
   ctx.textAlign = 'center';
 
+  // seal
+  drawCertificateSeal(ctx, W / 2, 118, 46);
+
   // kicker
   ctx.fillStyle = '#33C7E8';
-  ctx.font = '700 18px "JetBrains Mono", monospace';
-  ctx.fillText('E C O   /   A I   C E R T I F I C A T E', W / 2, 108);
+  ctx.font = '700 16px "JetBrains Mono", monospace';
+  ctx.fillText('I S S U E D   B Y   C O 2   C O M P A S S   A I', W / 2, 202);
 
   // title
   ctx.fillStyle = '#E7F5EF';
-  ctx.font = '800 46px "JetBrains Mono", monospace';
-  ctx.fillText('CO2 Compass 認定証', W / 2, 168);
+  ctx.font = '800 44px "JetBrains Mono", monospace';
+  ctx.fillText('CO2 Compass 認定証', W / 2, 250);
 
   // subtitle
   ctx.fillStyle = '#7C948C';
   ctx.font = '400 16px sans-serif';
-  ctx.fillText('地球にやさしい生活習慣への取り組みを証明します', W / 2, 202);
+  ctx.fillText('地球にやさしい生活習慣への取り組みを証明します', W / 2, 280);
 
-  // divider
-  ctx.strokeStyle = '#22322C';
-  ctx.beginPath(); ctx.moveTo(140, 232); ctx.lineTo(W - 140, 232); ctx.stroke();
+  // divider (gradient)
+  const divGrad = ctx.createLinearGradient(140, 0, W - 140, 0);
+  divGrad.addColorStop(0, 'rgba(61,255,176,0)');
+  divGrad.addColorStop(0.5, 'rgba(51,199,232,0.6)');
+  divGrad.addColorStop(1, 'rgba(61,255,176,0)');
+  ctx.strokeStyle = divGrad;
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(140, 312); ctx.lineTo(W - 140, 312); ctx.stroke();
 
-  // stats row
+  // stats row with dividers
   const stats = [
     { label: 'レベル', value: `Lv.${certData.level}` },
     { label: 'ベストランク', value: certData.bestGrade },
@@ -160,69 +238,95 @@ window.generateCertificateCanvas = function(certData){
   const colW = (W - 280) / stats.length;
   stats.forEach((s, i) => {
     const cx = 140 + colW * i + colW / 2;
+    if (i > 0){
+      ctx.strokeStyle = 'rgba(124,148,140,0.3)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(140 + colW * i, 360);
+      ctx.lineTo(140 + colW * i, 430);
+      ctx.stroke();
+    }
     ctx.fillStyle = '#3DFFB0';
-    ctx.font = '800 40px "JetBrains Mono", monospace';
-    ctx.fillText(s.value, cx, 330);
+    ctx.font = '800 38px "JetBrains Mono", monospace';
+    ctx.fillText(s.value, cx, 400);
     ctx.fillStyle = '#7C948C';
     ctx.font = '500 14px sans-serif';
-    ctx.fillText(s.label, cx, 358);
+    ctx.fillText(s.label, cx, 424);
   });
 
-  // seal circle
-  ctx.beginPath();
-  ctx.arc(W / 2, 460, 54, 0, Math.PI * 2);
-  ctx.strokeStyle = '#33C7E8';
-  ctx.lineWidth = 3;
-  ctx.stroke();
-  ctx.fillStyle = '#33C7E8';
-  ctx.font = '700 26px "JetBrains Mono", monospace';
-  ctx.fillText('🌱', W / 2, 470);
+  // ledger-style footer
+  ctx.strokeStyle = 'rgba(124,148,140,0.35)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([5, 5]);
+  ctx.beginPath(); ctx.moveTo(140, 500); ctx.lineTo(W - 140, 500); ctx.stroke();
+  ctx.setLineDash([]);
 
-  // footer
+  ctx.textAlign = 'left';
+  ctx.font = '500 15px "JetBrains Mono", monospace';
   ctx.fillStyle = '#7C948C';
-  ctx.font = '400 14px "JetBrains Mono", monospace';
-  ctx.fillText(`発行日: ${certData.issueDate}`, W / 2, 566);
-  ctx.fillText(`証明書番号: ${certData.certId}`, W / 2, 588);
+  ctx.fillText('発行日', 140, 546);
+  ctx.fillText('証明書番号', 140, 578);
+
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#E7F5EF';
+  ctx.fillText(certData.issueDate, W - 140, 546);
+  ctx.fillText(certData.certId, W - 140, 578);
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#7C948C';
+  ctx.font = '400 12px "JetBrains Mono", monospace';
+  ctx.fillText('co2compass.app', W / 2, 640);
 
   return canvas;
 };
 
+function whenFontsReady(){
+  if (document.fonts && document.fonts.ready){
+    return document.fonts.ready.catch(() => {});
+  }
+  return Promise.resolve();
+}
+
 window.downloadCertificateImage = function(certData){
-  const canvas = window.generateCertificateCanvas(certData);
-  canvas.toBlob((blob) => {
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `co2compass-certificate-${certData.certId}.png`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-  }, 'image/png');
+  whenFontsReady().then(() => {
+    const canvas = window.generateCertificateCanvas(certData);
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `co2compass-certificate-${certData.certId}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    }, 'image/png');
+  });
 };
 
 /* 画像つきで Web Share API を使う。対応していなければ静かに画像保存にフォールバック。 */
 window.shareCertificateImage = function(certData){
-  const canvas = window.generateCertificateCanvas(certData);
-  canvas.toBlob(async (blob) => {
-    if (!blob) return;
-    const shareText = `🌱 CO2 Compassで認定証を獲得したよ！\nLv.${certData.level} / ベストランク ${certData.bestGrade} / バッジ ${certData.badgesUnlocked}/${certData.badgesTotal}`;
+  whenFontsReady().then(() => {
+    const canvas = window.generateCertificateCanvas(certData);
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const shareText = `🌱 CO2 Compassで認定証を獲得したよ！\nLv.${certData.level} / ベストランク ${certData.bestGrade} / バッジ ${certData.badgesUnlocked}/${certData.badgesTotal}`;
 
-    if (navigator.share){
-      try {
-        const file = new File([blob], 'co2compass-certificate.png', { type: 'image/png' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })){
-          await navigator.share({ files: [file], title: 'CO2 Compass 認定証', text: shareText });
+      if (navigator.share){
+        try {
+          const file = new File([blob], 'co2compass-certificate.png', { type: 'image/png' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })){
+            await navigator.share({ files: [file], title: 'CO2 Compass 認定証', text: shareText });
+            return;
+          }
+          // ファイル共有非対応なら、テキストだけでも共有を試す
+          await navigator.share({ title: 'CO2 Compass 認定証', text: shareText });
           return;
+        } catch (e){
+          // ユーザーがキャンセルした/失敗した場合は画像保存にフォールバック
         }
-        // ファイル共有非対応なら、テキストだけでも共有を試す
-        await navigator.share({ title: 'CO2 Compass 認定証', text: shareText });
-        return;
-      } catch (e){
-        // ユーザーがキャンセルした/失敗した場合は画像保存にフォールバック
       }
-    }
-    window.downloadCertificateImage(certData);
-  }, 'image/png');
+      window.downloadCertificateImage(certData);
+    }, 'image/png');
+  });
 };

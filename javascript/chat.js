@@ -58,23 +58,47 @@ function aiSpeak(lines, done){
 
 function renderOptions(options, onSelect){
   replyOptions.innerHTML = '';
-  options.forEach(opt => {
+  
+  // Add quiz indicator if this is a quiz
+  const isQuiz = options.some(opt => opt.isQuizAnswer);
+  if (isQuiz){
+    const header = document.createElement('div');
+    header.className = 'quiz-header';
+    header.innerHTML = '<span class="quiz-indicator">🧠 クイズに答えよう</span>';
+    replyOptions.parentElement.insertBefore(header, replyOptions);
+  }
+  
+  options.forEach((opt, idx) => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = opt.restart ? 'reply-btn restart' : 'reply-btn';
-    if (opt.icon){
+    
+    let className = 'reply-btn';
+    if (opt.restart) className += ' restart';
+    if (opt.isQuizAnswer) className += ' quiz-option';
+    
+    btn.className = className;
+    
+    if (opt.isQuizAnswer){
+      btn.setAttribute('data-quiz-answer', 'true');
+      btn.setAttribute('data-quiz-label', opt.icon);
+    }
+    
+    if (opt.icon && !opt.isQuizAnswer){
       const icon = document.createElement('span');
       icon.className = 'btn-icon';
       icon.textContent = opt.icon;
       btn.appendChild(icon);
     }
+    
     const text = document.createElement('span');
     text.className = 'btn-text';
     text.textContent = opt.label;
     btn.appendChild(text);
+    
     btn.onclick = () => onSelect(opt);
     replyOptions.appendChild(btn);
   });
+  
   scrollToBottom();
   const firstButton = replyOptions.querySelector('.reply-btn');
   if (firstButton){
@@ -88,6 +112,7 @@ function addResult(category, kg, note){
   window.state.breakdown[category] = kg;
   const sum = Object.values(window.state.breakdown).reduce((s, v) => s + v, 0);
   window.state.total = +sum.toFixed(2);
+  console.debug('chat.addResult', { category, kg, breakdown: window.state.breakdown, total: window.state.total });
   updateGauge();
   if (note){
     addBubble(note, 'ai');
@@ -100,12 +125,12 @@ function updateGauge(){
   const offset = 326.7 * (1 - ratio);
   gaugeFill.style.strokeDashoffset = offset;
   gaugeValueEl.textContent = total.toFixed(1);
-
   let color = 'var(--mint)';
   if (total > 16) color = 'var(--danger)';
   else if (total > 11) color = 'var(--warn)';
   else if (total > 6) color = 'var(--cyan)';
   gaugeFill.style.stroke = color;
+  console.debug('chat.updateGauge', { total, ratio, color, offset });
 }
 
 window.scrollToBottom = scrollToBottom;

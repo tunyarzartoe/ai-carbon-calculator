@@ -22,7 +22,7 @@ window.loadGamifyState = function(){
   try {
     const raw = localStorage.getItem(window.GAMIFY_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
-    return Object.assign({
+    const state = Object.assign({
       xp: 0,
       diagnosisCount: 0,
       sRankCount: 0,
@@ -35,7 +35,10 @@ window.loadGamifyState = function(){
       badges: [],
       certId: null
     }, parsed);
+    console.debug('gamify.loadGamifyState', state);
+    return state;
   } catch (e){
+    console.error('gamify.loadGamifyState failed', e);
     return {
       xp: 0, diagnosisCount: 0, sRankCount: 0, maxStreak: 0, bestGradeRank: undefined,
       quizCorrectCount: 0, weeklyKey: null, weeklyCleared: false, weeklyClearedCount: 0,
@@ -45,7 +48,12 @@ window.loadGamifyState = function(){
 };
 
 window.saveGamifyState = function(g){
-  try { localStorage.setItem(window.GAMIFY_KEY, JSON.stringify(g)); } catch (e){ /* storage unavailable */ }
+  try {
+    localStorage.setItem(window.GAMIFY_KEY, JSON.stringify(g));
+    console.debug('gamify.saveGamifyState', g);
+  } catch (e){
+    console.error('gamify.saveGamifyState failed', e);
+  }
 };
 
 /* =========================================================
@@ -128,6 +136,17 @@ window.evaluateWeeklyChallenge = function(breakdown, total){
   return result;
 };
 
+window.normalizeWeeklyGamifyState = function(){
+  const challenge = window.getWeeklyChallenge();
+  const g = window.loadGamifyState();
+  if (g.weeklyKey !== challenge.key){
+    g.weeklyKey = challenge.key;
+    g.weeklyCleared = false;
+    window.saveGamifyState(g);
+  }
+  return { challenge, state: g };
+};
+
 function makeCertId(){
   const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
   return `CO2-${Date.now().toString(36).toUpperCase().slice(-5)}${rand}`;
@@ -181,38 +200,53 @@ window.getCertificateData = function(){
 
 /* 認定証・バッジモーダルの中身を描画 */
 window.renderAchievements = function(){
+  window.updateLevelBadge();
   window.renderGrowthTree();
   const certData = window.getCertificateData();
 
   const card = document.getElementById('certificateCard');
   if (card){
     card.innerHTML = `
-      <div class="cert-border">
-        <p class="cert-kicker">ECO / AI CERTIFICATE</p>
-        <h3 class="cert-title">CO<sub>2</sub> Compass 認定証</h3>
-        <p class="cert-sub">地球にやさしい生活習慣への取り組みを証明します</p>
-        <div class="cert-stats">
-          <div class="cert-stat"><span class="cert-stat-value">Lv.${certData.level}</span><span class="cert-stat-label">レベル</span></div>
-          <div class="cert-stat"><span class="cert-stat-value">${certData.bestGrade}</span><span class="cert-stat-label">ベストランク</span></div>
-          <div class="cert-stat"><span class="cert-stat-value">${certData.diagnosisCount}</span><span class="cert-stat-label">診断回数</span></div>
-        </div>
-        <p class="cert-badges-count">獲得バッジ ${certData.badgesUnlocked} / ${certData.badgesTotal}</p>
-        <div class="cert-footer">
-          <span>発行日: ${certData.issueDate}</span>
-          <span>No. ${certData.certId}</span>
+      <div class="cert-frame">
+        <div class="cert-inner">
+          <div class="cert-hologram"></div>
+          <div class="cert-seal">
+            <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+              <circle cx="50" cy="50" r="46" fill="none" stroke="var(--cyan)" stroke-width="1.5" opacity="0.55"></circle>
+              <circle cx="50" cy="50" r="38" fill="none" stroke="var(--mint)" stroke-width="1" stroke-dasharray="3 4" opacity="0.6"></circle>
+              <path d="M50 20 C62 28 62 46 50 54 C38 46 38 28 50 20 Z" fill="var(--mint)"></path>
+              <polygon points="50,82 58,54 50,54 42,54" fill="var(--cyan)" opacity="0.75"></polygon>
+              <circle cx="50" cy="54" r="5" fill="var(--bg-panel-2)" stroke="var(--text-hi)" stroke-width="1.4"></circle>
+            </svg>
+          </div>
+          <p class="cert-kicker">ISSUED BY CO2 COMPASS AI</p>
+          <h3 class="cert-title">CO<sub>2</sub> Compass 認定証</h3>
+          <p class="cert-sub">地球にやさしい生活習慣への取り組みを証明します</p>
+          <div class="cert-divider"></div>
+          <div class="cert-stats">
+            <div class="cert-stat"><span class="cert-stat-value">Lv.${certData.level}</span><span class="cert-stat-label">レベル</span></div>
+            <div class="cert-stat"><span class="cert-stat-value">${certData.bestGrade}</span><span class="cert-stat-label">ベストランク</span></div>
+            <div class="cert-stat"><span class="cert-stat-value">${certData.diagnosisCount}</span><span class="cert-stat-label">診断回数</span></div>
+          </div>
+          <p class="cert-badges-count">獲得バッジ ${certData.badgesUnlocked} / ${certData.badgesTotal}</p>
+          <div class="cert-footer">
+            <div class="cert-footer-row"><span class="cert-footer-label">発行日</span><span class="cert-footer-value">${certData.issueDate}</span></div>
+            <div class="cert-footer-row"><span class="cert-footer-label">証明書番号</span><span class="cert-footer-value">${certData.certId}</span></div>
+          </div>
         </div>
       </div>`;
   }
 
   const weeklyEl = document.getElementById('weeklyChallengeCard');
   if (weeklyEl){
-    const challenge = window.getWeeklyChallenge();
-    const g2 = window.loadGamifyState();
+    const { challenge, state: g2 } = window.normalizeWeeklyGamifyState();
     const cleared = g2.weeklyKey === challenge.key && g2.weeklyCleared;
+    const clearedCount = g2.weeklyClearedCount || 0;
     weeklyEl.innerHTML = `
       <p class="weekly-heading">${challenge.icon} 今週のチャレンジ</p>
       <p class="weekly-text">${challenge.text}</p>
       <p class="weekly-status ${cleared ? 'cleared' : ''}">${cleared ? '✅ クリア済み' : '診断すると自動で判定されるよ'}</p>
+      <p class="weekly-meta">これまでにチャレンジを達成した回数: ${clearedCount}回</p>
     `;
   }
 
@@ -220,15 +254,26 @@ window.renderAchievements = function(){
   if (grid){
     const g = window.loadGamifyState();
     const unlocked = g.badges || [];
-    grid.innerHTML = window.BADGES.map(b => {
-      const isUnlocked = unlocked.includes(b.id);
-      return `
+    const sortedBadges = [...window.BADGES].sort((a, b) => {
+      const aUnlocked = unlocked.includes(a.id);
+      const bUnlocked = unlocked.includes(b.id);
+      if (aUnlocked !== bUnlocked) return aUnlocked ? -1 : 1;
+      return window.BADGES.indexOf(a) - window.BADGES.indexOf(b);
+    });
+
+    if (unlocked.length === 0){
+      grid.innerHTML = '<p class="badges-empty">まだバッジがありません。診断を続けて獲得しよう！</p>';
+    } else {
+      grid.innerHTML = sortedBadges.map(b => {
+        const isUnlocked = unlocked.includes(b.id);
+        return `
         <div class="badge-cell ${isUnlocked ? 'unlocked' : 'locked'}">
           <span class="badge-icon">${isUnlocked ? b.icon : '🔒'}</span>
           <span class="badge-title">${b.title}</span>
           <span class="badge-desc">${b.desc}</span>
         </div>`;
-    }).join('');
+      }).join('');
+    }
   }
 
   const shareBtn = document.getElementById('certShareBtn');

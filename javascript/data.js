@@ -52,9 +52,14 @@ window.getRegionalGridIntensity = function(){
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (tz && window.CARBON_INTENSITY_BY_TIMEZONE[tz] !== undefined){
-      return { value: window.CARBON_INTENSITY_BY_TIMEZONE[tz], matched: true };
+      const value = window.CARBON_INTENSITY_BY_TIMEZONE[tz];
+      console.debug('data.getRegionalGridIntensity', { timeZone: tz, value, matched: true });
+      return { value, matched: true };
     }
-  } catch (e){ /* Intl未対応環境ではフォールバック */ }
+    console.warn('data.getRegionalGridIntensity fallback', { timeZone: tz });
+  } catch (e){
+    console.error('data.getRegionalGridIntensity error', e);
+  }
   return { value: window.GRID_INTENSITY, matched: false };
 };
 window.ELECTRICITY = {
@@ -94,9 +99,10 @@ window.loadHistory = function(){
   try {
     const raw = localStorage.getItem(window.HISTORY_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
-    // console.log('data.loadHistory', parsed.length, 'entries');
+    console.debug('data.loadHistory', { count: parsed.length, raw });
     return parsed;
   } catch (e){
+    console.error('data.loadHistory failed', e);
     return [];
   }
 };
@@ -107,8 +113,12 @@ window.saveHistoryEntry = function(entry){
   if (idx >= 0) hist[idx] = entry; else hist.push(entry);
   hist.sort((a, b) => a.date.localeCompare(b.date));
   hist = hist.slice(-30);
-  try { localStorage.setItem(window.HISTORY_KEY, JSON.stringify(hist)); } catch (e){}
-  // console.log('data.saveHistoryEntry', entry.date, entry.total);
+  try {
+    localStorage.setItem(window.HISTORY_KEY, JSON.stringify(hist));
+    console.debug('data.saveHistoryEntry', { entry, historyCount: hist.length });
+  } catch (e){
+    console.error('data.saveHistoryEntry failed', e);
+  }
   return hist;
 };
 
@@ -287,27 +297,43 @@ window.downloadBackupFile = function(){
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 4000);
+  console.debug('data.downloadBackupFile', { filename: a.download, size: blob.size });
 };
 
 /* ファイルを読み込んで localStorage に復元する。
    callback(ok, message) の形で結果を返す。壊れたファイルでもアプリを止めない。 */
+function isValidBackupPayload(data){
+  return data
+    && data.app === 'co2-compass'
+    && data.version === 1
+    && Array.isArray(data.history)
+    && typeof data.gamify === 'object'
+    && data.gamify !== null;
+}
+
 window.importBackupFile = function(file, callback){
   if (!file){ callback(false, 'ファイルが選択されていません'); return; }
   const reader = new FileReader();
   reader.onload = () => {
     try {
       const data = JSON.parse(reader.result);
-      if (!data || !Array.isArray(data.history) || typeof data.gamify !== 'object' || data.gamify === null){
+      if (!isValidBackupPayload(data)){
+        console.warn('data.importBackupFile invalid payload', data);
         callback(false, 'バックアップファイルの形式が正しくありません');
         return;
       }
       localStorage.setItem(window.HISTORY_KEY, JSON.stringify(data.history));
       localStorage.setItem(window.GAMIFY_KEY, JSON.stringify(data.gamify));
-      callback(true, '復元が完了したよ！');
+      console.debug('data.importBackupFile success', { historyCount: data.history.length });
+      callback(true, '復元が完了したよ！ページを再読み込みして反映します。');
     } catch (e){
+      console.error('data.importBackupFile failed', e);
       callback(false, 'ファイルの読み込みに失敗しました');
     }
   };
-  reader.onerror = () => callback(false, 'ファイルの読み込みに失敗しました');
+  reader.onerror = () => {
+    console.error('data.importBackupFile reader error');
+    callback(false, 'ファイルの読み込みに失敗しました');
+  };
   reader.readAsText(file);
 };
