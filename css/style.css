@@ -386,12 +386,13 @@ body{
 .reply-dock{
   border-top: 1px solid var(--border);
   background: var(--bg-panel);
-  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
 }
 .reply-options{
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
+  padding: 0 16px;
 }
 .reply-btn{
   font-family: var(--font-body);
@@ -423,6 +424,126 @@ body{
 .reply-btn.restart{
   border-color: var(--cyan);
   color: var(--cyan);
+}
+
+/* ================= QUIZ-SPECIFIC ENHANCEMENTS ================= */
+.reply-btn[data-quiz-answer="true"]{
+  min-width: 140px;
+  position: relative;
+  overflow: hidden;
+  flex: 0 1 calc(50% - 4px);
+  font-size: 14px;
+  padding: 14px 16px;
+  transition: all .3s cubic-bezier(.2, 0, .38, .9);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.reply-btn[data-quiz-answer="true"]::before{
+  content: attr(data-quiz-label);
+  position: relative;
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--cyan);
+  margin-right: 12px;
+}
+
+.reply-btn[data-quiz-answer="true"] .btn-text{
+  flex: 1;
+  text-align: left;
+}
+
+.reply-btn[data-quiz-answer="true"]:hover{
+  border-color: var(--mint);
+  background: linear-gradient(135deg, rgba(61,255,176,.12), rgba(51,199,232,.08));
+  box-shadow: 0 8px 20px rgba(61,255,176,.15);
+  transform: translateY(-2px);
+}
+
+.reply-btn[data-quiz-answer="true"]:active{
+  transform: scale(.98) translateY(-1px);
+}
+
+.reply-btn[data-quiz-answer="true"].correct{
+  border-color: var(--mint);
+  background: linear-gradient(135deg, rgba(61,255,176,.2), rgba(51,199,232,.1));
+  color: var(--mint);
+}
+
+.reply-btn[data-quiz-answer="true"].incorrect{
+  border-color: var(--danger);
+  background: linear-gradient(135deg, rgba(255,84,112,.15), rgba(255,156,76,.08));
+  color: var(--text-dim);
+}
+
+.reply-btn[data-quiz-answer="true"].disabled{
+  opacity: .6;
+  pointer-events: none;
+}
+
+/* Quiz progress indicator */
+.quiz-header{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 0 16px;
+  font-size: 13px;
+  color: var(--text-dim);
+  animation: fadeIn .3s ease;
+}
+
+.quiz-indicator{
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(51,199,232,.08);
+  border: 1px solid rgba(51,199,232,.18);
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--cyan);
+  font-size: 12px;
+}
+
+/* Feedback styling for quiz answers */
+.quiz-feedback{
+  margin: 12px 16px 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  border-left: 3px solid var(--mint);
+  background: rgba(61,255,176,.08);
+  animation: slideUp .25s ease;
+}
+
+.quiz-feedback.incorrect{
+  border-left-color: var(--danger);
+  background: rgba(255,84,112,.08);
+}
+
+.quiz-fact{
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,.06);
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+@keyframes fadeIn{
+  from{ opacity: 0; }
+  to{ opacity: 1; }
+}
+
+@keyframes slideUp{
+  from{ opacity: 0; transform: translateY(8px); }
+  to{ opacity: 1; transform: translateY(0); }
 }
 
 /* scrollbar (webkit) */
@@ -871,7 +992,7 @@ body{
   line-height: 1.5;
 }
 .weekly-status{
-  margin: 0;
+  margin: 0 0 6px;
   font-size: 11px;
   color: var(--text-dim);
 }
@@ -879,26 +1000,58 @@ body{
   color: var(--mint);
   font-weight: 700;
 }
-.cert-border{
-  border: 1px solid var(--mint);
-  border-radius: 16px;
-  padding: 22px 18px;
+.weekly-meta{
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-hi);
+  opacity: .85;
+}
+.badges-empty{
+  font-size: 12px;
+  color: var(--text-dim);
   text-align: center;
+  padding: 18px 10px;
+}
+.badge-cell.locked{
+  opacity: .55;
+  filter: grayscale(0.55);
+}
+/* ---- 認定証カード：グラデーションフレーム + シール + レジャー風フッター ---- */
+.cert-frame{
+  padding: 2px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, var(--mint), var(--cyan) 55%, var(--mint));
+}
+.cert-inner{
   position: relative;
+  border-radius: 20px;
+  padding: 28px 20px 20px;
+  text-align: center;
+  overflow: hidden;
   background:
     linear-gradient(var(--border) 1px, transparent 1px),
     linear-gradient(90deg, var(--border) 1px, transparent 1px),
     var(--bg-panel-2);
   background-size: 18px 18px, 18px 18px, auto;
 }
-.cert-border::before{
-  content: '';
+.cert-hologram{
   position: absolute;
-  inset: 6px;
-  border: 1px solid var(--border);
-  border-radius: 11px;
+  top: -18px;
+  right: -18px;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: conic-gradient(from 90deg, var(--mint), var(--cyan), #fff, var(--mint));
+  opacity: .18;
+  filter: blur(1px);
   pointer-events: none;
 }
+.cert-seal{
+  width: 66px;
+  height: 66px;
+  margin: 0 auto 10px;
+}
+.cert-seal svg{ width: 100%; height: 100%; }
 .cert-kicker{
   margin: 0;
   font-family: var(--font-display);
@@ -919,18 +1072,33 @@ body{
   font-size: 12px;
   color: var(--text-dim);
 }
+.cert-divider{
+  height: 1px;
+  margin: 0 0 16px;
+  background: linear-gradient(90deg, transparent, rgba(61,255,176,.5), rgba(51,199,232,.5), transparent);
+}
 .cert-stats{
   display: flex;
   justify-content: space-around;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  padding: 14px 0;
+  padding-bottom: 14px;
   margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
 }
 .cert-stat{
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding: 0 12px;
+  position: relative;
+}
+.cert-stat + .cert-stat::before{
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 2px;
+  bottom: 2px;
+  width: 1px;
+  background: var(--border);
 }
 .cert-stat-value{
   font-family: var(--font-display);
@@ -943,19 +1111,27 @@ body{
   color: var(--text-dim);
 }
 .cert-badges-count{
-  margin: 0 0 14px;
+  margin: 0 0 16px;
   font-size: 12.5px;
   font-weight: 600;
   color: var(--warn);
 }
 .cert-footer{
   display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+.cert-footer-row{
+  display: flex;
   justify-content: space-between;
   font-family: var(--font-display);
   font-size: 10px;
-  color: var(--text-dim);
   letter-spacing: .02em;
 }
+.cert-footer-label{ color: var(--text-dim); }
+.cert-footer-value{ color: var(--text-hi); }
 
 .certificate-actions{
   display: flex;
