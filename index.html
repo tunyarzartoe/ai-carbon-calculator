@@ -148,6 +148,10 @@
                     <button id="achievementsClose" class="modal-close" aria-label="閉じる" type="button">✕</button>
                 </div>
                 <div id="growthTreeCard" class="growth-tree-card"></div>
+                <div class="cert-name-field">
+                    <label for="certNameInput">証明書に表示するお名前（任意）</label>
+                    <input id="certNameInput" type="text" maxlength="20" placeholder="ニックネームなど">
+                </div>
                 <div id="certificateCard" class="certificate-card"></div>
                 <div id="weeklyChallengeCard" class="weekly-challenge-card"></div>
                 <div class="certificate-actions">
@@ -163,17 +167,16 @@
 
                 <div class="data-manage">
                     <h3 class="data-manage-heading">📦 データ管理</h3>
-                    <p class="data-manage-note">記録はこの端末のブラウザだけに保存されます。機種変更やブラウザのクリアで消える前に、JSONファイルとしてバックアップを取っておきましょう。</p>
-                    <p class="data-manage-note">バックアップファイルを安全な場所に保存すれば、あとでいつでも復元できます。</p>
+                    <p class="data-manage-note">記録はこの端末のブラウザだけに保存されているよ。機種変更やブラウザのデータ削除に備えて、バックアップを保存しておこう。</p>
                     <div class="data-manage-actions">
                         <button id="exportDataBtn" class="reply-btn" type="button">
                             <span class="btn-icon">💾</span><span class="btn-text">バックアップを保存</span>
                         </button>
                         <button id="importDataBtn" class="reply-btn" type="button">
-                            <span class="btn-icon">📂</span><span class="btn-text">バックアップを復元</span>
+                            <span class="btn-icon">📂</span><span class="btn-text">復元する</span>
                         </button>
                     </div>
-                    <input type="file" id="importFileInput" accept="application/json,.json" hidden>
+                    <input type="file" id="importFileInput" accept="application/json" hidden>
                 </div>
             </div>
         </div>

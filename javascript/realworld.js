@@ -119,16 +119,17 @@ function roundedRectPath(ctx, x, y, w, h, r){
 }
 
 /* 認定証の中央上部に置く「シール」マーク。ブランドのコンパス/リーフのモチーフを
-   絵文字ではなくベクターパスで描く（環境によって絵文字のレンダリングが崩れるのを防ぐため）。 */
-function drawCertificateSeal(ctx, cx, cy, r){
+   絵文字ではなくベクターパスで描く（環境によって絵文字のレンダリングが崩れるのを防ぐため）。
+   c1/c2 はティアごとの配色（HEX）。 */
+function drawCertificateSeal(ctx, cx, cy, r, c1, c2){
   ctx.save();
-  ctx.strokeStyle = 'rgba(51,199,232,0.55)';
+  ctx.strokeStyle = hexToRgba(c2, 0.55);
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.stroke();
 
-  ctx.strokeStyle = 'rgba(61,255,176,0.55)';
+  ctx.strokeStyle = hexToRgba(c1, 0.55);
   ctx.lineWidth = 1.5;
   ctx.setLineDash([4, 5]);
   ctx.beginPath();
@@ -137,7 +138,7 @@ function drawCertificateSeal(ctx, cx, cy, r){
   ctx.setLineDash([]);
 
   // leaf
-  ctx.fillStyle = '#3DFFB0';
+  ctx.fillStyle = c1;
   ctx.beginPath();
   ctx.moveTo(cx, cy - r * 0.58);
   ctx.bezierCurveTo(cx + r * 0.5, cy - r * 0.3, cx + r * 0.5, cy + r * 0.14, cx, cy + r * 0.2);
@@ -145,7 +146,7 @@ function drawCertificateSeal(ctx, cx, cy, r){
   ctx.fill();
 
   // compass needle
-  ctx.fillStyle = 'rgba(51,199,232,0.8)';
+  ctx.fillStyle = hexToRgba(c2, 0.8);
   ctx.beginPath();
   ctx.moveTo(cx - r * 0.16, cy + r * 0.2);
   ctx.lineTo(cx + r * 0.16, cy + r * 0.2);
@@ -164,12 +165,64 @@ function drawCertificateSeal(ctx, cx, cy, r){
   ctx.restore();
 }
 
+function hexToRgba(hex, alpha){
+  const h = hex.replace('#', '');
+  const r = parseInt(h.length === 3 ? h[0] + h[0] : h.slice(0, 2), 16);
+  const g = parseInt(h.length === 3 ? h[1] + h[1] : h.slice(2, 4), 16);
+  const b = parseInt(h.length === 3 ? h[2] + h[2] : h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function drawCornerBrackets(ctx, x, y, w, h, size, color){
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  const corners = [
+    [[x, y + size], [x, y], [x + size, y]],
+    [[x + w - size, y], [x + w, y], [x + w, y + size]],
+    [[x, y + h - size], [x, y + h], [x + size, y + h]],
+    [[x + w - size, y + h], [x + w, y + h], [x + w, y + h - size]]
+  ];
+  corners.forEach(pts => {
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    ctx.lineTo(pts[1][0], pts[1][1]);
+    ctx.lineTo(pts[2][0], pts[2][1]);
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+
+function drawTierBadge(ctx, cx, y, text, c1, c2){
+  ctx.save();
+  ctx.font = '700 15px "JetBrains Mono", monospace';
+  const paddingX = 18;
+  const textWidth = ctx.measureText(text).width;
+  const boxW = textWidth + paddingX * 2;
+  const boxH = 30;
+  const grad = ctx.createLinearGradient(cx - boxW / 2, 0, cx + boxW / 2, 0);
+  grad.addColorStop(0, c1);
+  grad.addColorStop(1, c2);
+  roundedRectPath(ctx, cx - boxW / 2, y - boxH / 2, boxW, boxH, boxH / 2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+  ctx.fillStyle = '#0A0F0D';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, cx, y + 1);
+  ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+}
+
 window.generateCertificateCanvas = function(certData){
   const canvas = document.createElement('canvas');
-  const W = 1000, H = 700;
+  const W = 850, H = 1100;
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext('2d');
+  const tier = certData.tier || { primary: '#3DFFB0', secondary: '#33C7E8', emoji: '🥉', label: 'ブロンズ' };
+  const c1 = tier.primary, c2 = tier.secondary;
 
   // page background
   ctx.fillStyle = '#0A0F0D';
@@ -177,16 +230,17 @@ window.generateCertificateCanvas = function(certData){
 
   // gradient frame (outer)
   const frameGrad = ctx.createLinearGradient(0, 0, W, H);
-  frameGrad.addColorStop(0, '#3DFFB0');
-  frameGrad.addColorStop(0.55, '#33C7E8');
-  frameGrad.addColorStop(1, '#3DFFB0');
-  roundedRectPath(ctx, 20, 20, W - 40, H - 40, 28);
+  frameGrad.addColorStop(0, c1);
+  frameGrad.addColorStop(0.55, c2);
+  frameGrad.addColorStop(1, c1);
+  roundedRectPath(ctx, 20, 20, W - 40, H - 40, 26);
   ctx.strokeStyle = frameGrad;
   ctx.lineWidth = 5;
   ctx.stroke();
 
+  ctx.save();
   // inner panel
-  roundedRectPath(ctx, 34, 34, W - 68, H - 68, 22);
+  roundedRectPath(ctx, 34, 34, W - 68, H - 68, 20);
   ctx.fillStyle = '#111917';
   ctx.fill();
   ctx.clip();
@@ -198,84 +252,120 @@ window.generateCertificateCanvas = function(certData){
       ctx.fillRect(x, y, 1, 1);
     }
   }
+  ctx.restore();
+
+  // corner brackets
+  drawCornerBrackets(ctx, 46, 46, W - 92, H - 92, 22, hexToRgba(c1, 0.85));
 
   ctx.textAlign = 'center';
 
   // seal
-  drawCertificateSeal(ctx, W / 2, 118, 46);
+  drawCertificateSeal(ctx, W / 2, 128, 48, c1, c2);
+
+  // tier badge
+  drawTierBadge(ctx, W / 2, 208, `${tier.emoji} ${tier.label}会員`, c1, c2);
 
   // kicker
-  ctx.fillStyle = '#33C7E8';
-  ctx.font = '700 16px "JetBrains Mono", monospace';
-  ctx.fillText('I S S U E D   B Y   C O 2   C O M P A S S   A I', W / 2, 202);
+  ctx.fillStyle = c2;
+  ctx.font = '700 15px "JetBrains Mono", monospace';
+  ctx.fillText('I S S U E D   B Y   C O 2   C O M P A S S   A I', W / 2, 250);
 
   // title
   ctx.fillStyle = '#E7F5EF';
-  ctx.font = '800 44px "JetBrains Mono", monospace';
-  ctx.fillText('CO2 Compass 認定証', W / 2, 250);
+  ctx.font = '800 38px "JetBrains Mono", monospace';
+  ctx.fillText('CO2 Compass 認定証', W / 2, 294);
 
   // subtitle
   ctx.fillStyle = '#7C948C';
-  ctx.font = '400 16px sans-serif';
-  ctx.fillText('地球にやさしい生活習慣への取り組みを証明します', W / 2, 280);
+  ctx.font = '400 14px sans-serif';
+  ctx.fillText('地球にやさしい生活習慣への取り組みを証明します', W / 2, 320);
+
+  // recipient name
+  ctx.fillStyle = '#7C948C';
+  ctx.font = '700 11px "JetBrains Mono", monospace';
+  ctx.fillText('R E C I P I E N T', W / 2, 366);
+
+  const displayName = certData.name && certData.name.trim() ? certData.name.trim() : '－ 未設定 －';
+  ctx.fillStyle = '#E7F5EF';
+  ctx.font = '800 30px "JetBrains Mono", monospace';
+  ctx.fillText(displayName, W / 2, 406);
+  const nameWidth = Math.max(170, ctx.measureText(displayName).width + 30);
+  ctx.strokeStyle = c1;
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(W / 2 - nameWidth / 2, 420);
+  ctx.lineTo(W / 2 + nameWidth / 2, 420);
+  ctx.stroke();
 
   // divider (gradient)
-  const divGrad = ctx.createLinearGradient(140, 0, W - 140, 0);
-  divGrad.addColorStop(0, 'rgba(61,255,176,0)');
-  divGrad.addColorStop(0.5, 'rgba(51,199,232,0.6)');
-  divGrad.addColorStop(1, 'rgba(61,255,176,0)');
+  const divY = 466;
+  const divGrad = ctx.createLinearGradient(110, 0, W - 110, 0);
+  divGrad.addColorStop(0, hexToRgba(c1, 0));
+  divGrad.addColorStop(0.5, hexToRgba(c2, 0.6));
+  divGrad.addColorStop(1, hexToRgba(c1, 0));
   ctx.strokeStyle = divGrad;
   ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(140, 312); ctx.lineTo(W - 140, 312); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(110, divY); ctx.lineTo(W - 110, divY); ctx.stroke();
 
-  // stats row with dividers
+  // stats: 2x2 grid (matches the in-app certificate card layout)
   const stats = [
     { label: 'レベル', value: `Lv.${certData.level}` },
     { label: 'ベストランク', value: certData.bestGrade },
     { label: '診断回数', value: `${certData.diagnosisCount}回` },
     { label: '獲得バッジ', value: `${certData.badgesUnlocked}/${certData.badgesTotal}` }
   ];
-  const colW = (W - 280) / stats.length;
+  const gridTop = divY + 60;
+  const rowH = 110;
+  const colW = (W - 220) / 2;
+  const colCenters = [110 + colW / 2, 110 + colW + colW / 2];
   stats.forEach((s, i) => {
-    const cx = 140 + colW * i + colW / 2;
-    if (i > 0){
-      ctx.strokeStyle = 'rgba(124,148,140,0.3)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(140 + colW * i, 360);
-      ctx.lineTo(140 + colW * i, 430);
-      ctx.stroke();
-    }
-    ctx.fillStyle = '#3DFFB0';
-    ctx.font = '800 38px "JetBrains Mono", monospace';
-    ctx.fillText(s.value, cx, 400);
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const cx = colCenters[col];
+    const cy = gridTop + row * rowH;
+    ctx.fillStyle = c1;
+    ctx.font = '800 34px "JetBrains Mono", monospace';
+    ctx.fillText(s.value, cx, cy);
     ctx.fillStyle = '#7C948C';
     ctx.font = '500 14px sans-serif';
-    ctx.fillText(s.label, cx, 424);
+    ctx.fillText(s.label, cx, cy + 26);
   });
-
-  // ledger-style footer
-  ctx.strokeStyle = 'rgba(124,148,140,0.35)';
+  // grid divider lines (vertical between columns, horizontal between rows)
+  ctx.strokeStyle = 'rgba(124,148,140,0.3)';
   ctx.lineWidth = 1;
-  ctx.setLineDash([5, 5]);
-  ctx.beginPath(); ctx.moveTo(140, 500); ctx.lineTo(W - 140, 500); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(W / 2, gridTop - 42); ctx.lineTo(W / 2, gridTop + rowH + 30);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(110, gridTop + rowH / 2 - 6); ctx.lineTo(W - 110, gridTop + rowH / 2 - 6);
+  ctx.stroke();
+
+  // perforation (ticket-style dashed line)
+  const perfY = gridTop + rowH + 70;
+  ctx.strokeStyle = 'rgba(124,148,140,0.4)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 8]);
+  ctx.beginPath(); ctx.moveTo(70, perfY); ctx.lineTo(W - 70, perfY); ctx.stroke();
   ctx.setLineDash([]);
 
+  // ledger-style footer
+  const footerY1 = perfY + 56;
+  const footerY2 = perfY + 92;
   ctx.textAlign = 'left';
   ctx.font = '500 15px "JetBrains Mono", monospace';
   ctx.fillStyle = '#7C948C';
-  ctx.fillText('発行日', 140, 546);
-  ctx.fillText('証明書番号', 140, 578);
+  ctx.fillText('発行日', 110, footerY1);
+  ctx.fillText('証明書番号', 110, footerY2);
 
   ctx.textAlign = 'right';
   ctx.fillStyle = '#E7F5EF';
-  ctx.fillText(certData.issueDate, W - 140, 546);
-  ctx.fillText(certData.certId, W - 140, 578);
+  ctx.fillText(certData.issueDate, W - 110, footerY1);
+  ctx.fillText(certData.certId, W - 110, footerY2);
 
   ctx.textAlign = 'center';
   ctx.fillStyle = '#7C948C';
   ctx.font = '400 12px "JetBrains Mono", monospace';
-  ctx.fillText('co2compass.app', W / 2, 640);
+  ctx.fillText('co2compass.app', W / 2, H - 60);
 
   return canvas;
 };
@@ -310,7 +400,7 @@ window.shareCertificateImage = function(certData){
     const canvas = window.generateCertificateCanvas(certData);
     canvas.toBlob(async (blob) => {
       if (!blob) return;
-      const shareText = `🌱 CO2 Compassで認定証を獲得したよ！\nLv.${certData.level} / ベストランク ${certData.bestGrade} / バッジ ${certData.badgesUnlocked}/${certData.badgesTotal}`;
+      const shareText = `🌱 CO2 Compassで${certData.tier ? certData.tier.label + '認定証' : '認定証'}を獲得したよ！\nLv.${certData.level} / ベストランク ${certData.bestGrade} / バッジ ${certData.badgesUnlocked}/${certData.badgesTotal}`;
 
       if (navigator.share){
         try {

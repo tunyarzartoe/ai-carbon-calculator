@@ -33,7 +33,8 @@ window.loadGamifyState = function(){
       weeklyCleared: false,
       weeklyClearedCount: 0,
       badges: [],
-      certId: null
+      certId: null,
+      userName: ''
     }, parsed);
     console.debug('gamify.loadGamifyState', state);
     return state;
@@ -42,9 +43,16 @@ window.loadGamifyState = function(){
     return {
       xp: 0, diagnosisCount: 0, sRankCount: 0, maxStreak: 0, bestGradeRank: undefined,
       quizCorrectCount: 0, weeklyKey: null, weeklyCleared: false, weeklyClearedCount: 0,
-      badges: [], certId: null
+      badges: [], certId: null, userName: ''
     };
   }
+};
+
+window.setUserName = function(name){
+  const g = window.loadGamifyState();
+  g.userName = String(name || '').trim().slice(0, 20);
+  window.saveGamifyState(g);
+  return g.userName;
 };
 
 window.saveGamifyState = function(g){
@@ -152,6 +160,41 @@ function makeCertId(){
   return `CO2-${Date.now().toString(36).toUpperCase().slice(-5)}${rand}`;
 }
 
+/* =========================================================
+   認定証ティア（レベルに応じて証明書の見た目そのものが進化する）
+   ========================================================= */
+window.CERT_TIERS = [
+  { id: 'bronze',   minLevel: 1,  label: 'ブロンズ',   emoji: '🥉', primary: '#CD8B5C', secondary: '#8C5A34' },
+  { id: 'silver',   minLevel: 5,  label: 'シルバー',   emoji: '🥈', primary: '#D7DEE3', secondary: '#8E9AA3' },
+  { id: 'gold',     minLevel: 10, label: 'ゴールド',   emoji: '🥇', primary: '#F3C94D', secondary: '#B8860B' },
+  { id: 'platinum', minLevel: 15, label: 'プラチナ',   emoji: '💎', primary: '#E8FBFF', secondary: '#33C7E8' }
+];
+
+window.getCertTier = function(level){
+  let current = window.CERT_TIERS[0];
+  window.CERT_TIERS.forEach(t => { if (level >= t.minLevel) current = t; });
+  return current;
+};
+
+/* =========================================================
+   証明書に表示する名前（任意入力、この端末に保存されるだけ）
+   ========================================================= */
+window.CERT_NAME_KEY = 'co2compass_cert_name';
+
+window.loadCertName = function(){
+  try { return (localStorage.getItem(window.CERT_NAME_KEY) || '').slice(0, 20); } catch (e){ return ''; }
+};
+
+window.saveCertName = function(name){
+  try { localStorage.setItem(window.CERT_NAME_KEY, (name || '').slice(0, 20)); } catch (e){ /* storage unavailable */ }
+};
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
 /**
  * 診断完了時に呼ぶ。統計を更新し、新しく解除されたバッジ一覧を返す。
  * grade: rankFor() が返す 'S'|'A'|'B'|'C'|'D'
@@ -186,9 +229,12 @@ window.checkAchievements = function(grade, streak, quizCorrect){
 window.getCertificateData = function(){
   const g = window.loadGamifyState();
   if (!g.certId) g.certId = makeCertId();
+  const level = window.levelFor(g.xp);
   return {
-    level: window.levelFor(g.xp),
+    level,
     xp: g.xp,
+    tier: window.getCertTier(level),
+    name: window.loadCertName(),
     bestGrade: g.bestGradeRank !== undefined ? GRADE_BY_RANK[g.bestGradeRank] : '-',
     diagnosisCount: g.diagnosisCount || 0,
     badgesUnlocked: (g.badges || []).length,
@@ -206,35 +252,57 @@ window.renderAchievements = function(){
 
   const card = document.getElementById('certificateCard');
   if (card){
+    const tier = certData.tier;
+    const nameDisplay = certData.name ? escapeHtml(certData.name) : '－ 未設定 －';
     card.innerHTML = `
-      <div class="cert-frame">
+      <div class="cert-frame" style="--cert-c1:${tier.primary}; --cert-c2:${tier.secondary};">
         <div class="cert-inner">
+          <span class="cert-corner cert-corner-tl"></span>
+          <span class="cert-corner cert-corner-tr"></span>
+          <span class="cert-corner cert-corner-bl"></span>
+          <span class="cert-corner cert-corner-br"></span>
           <div class="cert-hologram"></div>
           <div class="cert-seal">
             <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-              <circle cx="50" cy="50" r="46" fill="none" stroke="var(--cyan)" stroke-width="1.5" opacity="0.55"></circle>
-              <circle cx="50" cy="50" r="38" fill="none" stroke="var(--mint)" stroke-width="1" stroke-dasharray="3 4" opacity="0.6"></circle>
-              <path d="M50 20 C62 28 62 46 50 54 C38 46 38 28 50 20 Z" fill="var(--mint)"></path>
-              <polygon points="50,82 58,54 50,54 42,54" fill="var(--cyan)" opacity="0.75"></polygon>
+              <circle cx="50" cy="50" r="46" fill="none" stroke="var(--cert-c2)" stroke-width="1.5" opacity="0.55"></circle>
+              <circle cx="50" cy="50" r="38" fill="none" stroke="var(--cert-c1)" stroke-width="1" stroke-dasharray="3 4" opacity="0.6"></circle>
+              <path d="M50 20 C62 28 62 46 50 54 C38 46 38 28 50 20 Z" fill="var(--cert-c1)"></path>
+              <polygon points="50,82 58,54 50,54 42,54" fill="var(--cert-c2)" opacity="0.75"></polygon>
               <circle cx="50" cy="54" r="5" fill="var(--bg-panel-2)" stroke="var(--text-hi)" stroke-width="1.4"></circle>
             </svg>
           </div>
+          <span class="cert-tier-badge">${tier.emoji} ${tier.label}会員</span>
           <p class="cert-kicker">ISSUED BY CO2 COMPASS AI</p>
           <h3 class="cert-title">CO<sub>2</sub> Compass 認定証</h3>
           <p class="cert-sub">地球にやさしい生活習慣への取り組みを証明します</p>
+          <div class="cert-recipient">
+            <span class="cert-recipient-label">RECIPIENT</span>
+            <p class="cert-recipient-name">${nameDisplay}</p>
+          </div>
           <div class="cert-divider"></div>
           <div class="cert-stats">
             <div class="cert-stat"><span class="cert-stat-value">Lv.${certData.level}</span><span class="cert-stat-label">レベル</span></div>
             <div class="cert-stat"><span class="cert-stat-value">${certData.bestGrade}</span><span class="cert-stat-label">ベストランク</span></div>
             <div class="cert-stat"><span class="cert-stat-value">${certData.diagnosisCount}</span><span class="cert-stat-label">診断回数</span></div>
+            <div class="cert-stat"><span class="cert-stat-value">${certData.badgesUnlocked}/${certData.badgesTotal}</span><span class="cert-stat-label">獲得バッジ</span></div>
           </div>
-          <p class="cert-badges-count">獲得バッジ ${certData.badgesUnlocked} / ${certData.badgesTotal}</p>
+          <div class="cert-perforation"></div>
           <div class="cert-footer">
             <div class="cert-footer-row"><span class="cert-footer-label">発行日</span><span class="cert-footer-value">${certData.issueDate}</span></div>
             <div class="cert-footer-row"><span class="cert-footer-label">証明書番号</span><span class="cert-footer-value">${certData.certId}</span></div>
           </div>
         </div>
       </div>`;
+  }
+
+  const nameInput = document.getElementById('certNameInput');
+  if (nameInput){
+    nameInput.value = certData.name;
+    nameInput.oninput = () => {
+      window.saveCertName(nameInput.value);
+      const nameEl = document.querySelector('.cert-recipient-name');
+      if (nameEl) nameEl.textContent = nameInput.value.trim() ? nameInput.value.slice(0, 20) : '－ 未設定 －';
+    };
   }
 
   const weeklyEl = document.getElementById('weeklyChallengeCard');
