@@ -299,9 +299,12 @@ window.renderAchievements = function(){
   if (nameInput){
     nameInput.value = certData.name;
     nameInput.oninput = () => {
+      const trimmed = nameInput.value.trim();
       window.saveCertName(nameInput.value);
+      certData.name = nameInput.value; // 既に発行済みの certData オブジェクトも更新し、
+                                        // ダウンロード/シェアボタンが古い名前を参照する（stale closure）のを防ぐ
       const nameEl = document.querySelector('.cert-recipient-name');
-      if (nameEl) nameEl.textContent = nameInput.value.trim() ? nameInput.value.slice(0, 20) : '－ 未設定 －';
+      if (nameEl) nameEl.textContent = trimmed ? nameInput.value.slice(0, 20) : '－ 未設定 －';
     };
   }
 
