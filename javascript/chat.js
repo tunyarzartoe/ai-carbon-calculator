@@ -58,16 +58,22 @@ function aiSpeak(lines, done){
 
 function renderOptions(options, onSelect){
   replyOptions.innerHTML = '';
-  
-  // Add quiz indicator if this is a quiz
+
+  // 前のセッションで残ってしまった quiz-header があれば掃除する（過去バージョンの後始末）
+  const staleHeaders = replyOptions.parentElement.querySelectorAll(':scope > .quiz-header');
+  staleHeaders.forEach(el => el.remove());
+
+  // クイズの場合は見出しを表示する。#replyOptions の中に入れておくことで、
+  // 次回の renderOptions() 呼び出し時（replyOptions.innerHTML = ''）に
+  // 自動的に消える（外に置くと消されずに蓄積してレイアウトが壊れるため）。
   const isQuiz = options.some(opt => opt.isQuizAnswer);
   if (isQuiz){
     const header = document.createElement('div');
     header.className = 'quiz-header';
     header.innerHTML = '<span class="quiz-indicator">🧠 クイズに答えよう</span>';
-    replyOptions.parentElement.insertBefore(header, replyOptions);
+    replyOptions.appendChild(header);
   }
-  
+
   options.forEach((opt, idx) => {
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -83,7 +89,7 @@ function renderOptions(options, onSelect){
       btn.setAttribute('data-quiz-label', opt.icon);
     }
     
-    if (opt.icon && !opt.isQuizAnswer){
+    if (opt.icon){
       const icon = document.createElement('span');
       icon.className = 'btn-icon';
       icon.textContent = opt.icon;

@@ -26,7 +26,10 @@ window.steps = [
         : `${weekly.icon} 今週のチャレンジ: ${weekly.text}`;
       return [streakLine, weeklyLine];
     },
-    options: [{ label: 'はじめる', icon: '✨', next: 'goal' }]
+    options: [
+      { label: 'はじめる', icon: '✨', next: 'goal' },
+      { label: '10秒で記録', icon: '⚡', quickLog: true }
+    ]
   },
   {
     id: 'goal',
@@ -62,6 +65,7 @@ window.steps = [
     onAnswer: function(val){
       const kgPerKm = window.TRANSPORT[window.transportChoice].kgPerKm || 0;
       const km = window.DISTANCE_KM[val].km || 0;
+      if (window.saveCommuteKm) window.saveCommuteKm(km);
       const totalKm = km * 2;
       const kg = +(kgPerKm * totalKm).toFixed(2);
       window.addResult('transport', kg, `移動: ${window.TRANSPORT[window.transportChoice].label} / ${window.DISTANCE_KM[val].label}（往復 ${totalKm}km）→ 約 ${kg}kg`);
@@ -114,7 +118,9 @@ window.steps = [
   {
     id: 'quiz',
     ai: function(){
-      window.currentQuiz = window.pickRandomQuiz();
+      const breakdown = window.state.breakdown;
+      const preferredCategory = Object.keys(breakdown).sort((a, b) => breakdown[b] - breakdown[a])[0];
+      window.currentQuiz = window.pickRandomQuiz(preferredCategory);
       return [`ちょっと一息、クイズです🧠<br>${window.currentQuiz.q}`];
     },
     options: [], // populated dynamically in goToStep for this step
@@ -123,32 +129,16 @@ window.steps = [
 ];
 
 function goToStep(stepId){
-  if (!stepId){
-    console.warn('flow.goToStep called without stepId');
-    return;
-  }
-  if (stepId === 'result'){
-    console.warn('flow.goToStep called with reserved stepId result');
-    return;
-  }
+  if (!stepId) return;
+  if (stepId === 'result') return;
   const step = window.steps.find(s => s.id === stepId);
-  if (!step){
-    console.error('flow.goToStep could not find step', stepId);
-    return;
-  }
+  if (!step) return;
   window.currentStepId = stepId;
   window.clearOptions();
-  console.debug('flow.goToStep', { stepId, currentStepId: window.currentStepId });
 
   if (stepId === 'quiz'){
-    window.currentQuiz = window.pickRandomQuiz();
     const lines = [window.randomAck(), ...step.ai()];
     const quiz = window.currentQuiz;
-    if (!quiz){
-      console.error('flow.goToStep quiz step could not pick a quiz');
-      showResult();
-      return;
-    }
     const letters = ['Ⓐ', 'Ⓑ', 'Ⓒ'];
     const quizOptions = quiz.choices.map((choice, i) => ({
       label: choice.label,
@@ -156,7 +146,6 @@ function goToStep(stepId){
       correct: choice.correct,
       isQuizAnswer: true
     }));
-    console.debug('flow.goToStep quiz', { quizIndex: window.lastQuizIndex, quiz: quiz.q });
     window.aiSpeak(lines, () => window.renderOptions(quizOptions, selectOption));
     return;
   }
@@ -166,46 +155,44 @@ function goToStep(stepId){
 }
 
 function selectOption(opt){
-  console.debug('flow.selectOption', { opt, currentStepId: window.currentStepId });
   if (opt.isQuizAnswer){
     window.clearOptions();
-    
-    // Remove quiz header if present
-    const quizHeader = document.querySelector('.quiz-header');
-    if (quizHeader) quizHeader.remove();
-    
     window.addBubble(opt.label, 'user');
     window.lastQuizCorrect = opt.correct;
-    const fact = window.currentQuiz ? window.currentQuiz.fact : 'クイズ情報が見つかりませんでした。';
-    
+    // window.recordQuizAnswer(window.currentQuiz.id, opt.correct);
+    if (typeof window.recordQuizAnswer === "function") {
+
+    window.recordQuizAnswer(
+        window.currentQuiz?.id || "quiz",
+        opt.correct
+    );
+
+}
+    const fact = window.currentQuiz.fact;
     const resultLine = opt.correct
-      ? `🎉 正解！`
-      : `😅 おしい、不正解。`;
-    
-    // Show feedback with enhanced styling
-    const feedbackDiv = document.createElement('div');
-    feedbackDiv.className = `quiz-feedback ${opt.correct ? '' : 'incorrect'}`;
-    const feedbackContent = document.createElement('div');
-    feedbackContent.innerHTML = `${resultLine}<div class="quiz-fact">${fact}</div>`;
-    feedbackDiv.appendChild(feedbackContent);
-    document.getElementById('chatLog').appendChild(feedbackDiv);
-    
+      ? `🎉 正解！ ${fact}`
+      : `😅 おしい、不正解。${fact}`;
     setTimeout(() => {
-      document.getElementById('chatLog').scrollTop = document.getElementById('chatLog').scrollHeight;
-      setTimeout(showResult, 500);
+      window.aiSpeak([resultLine], () => {
+        setTimeout(showResult, 300);
+      });
     }, 300);
     return;
   }
 
   if (opt.showResultModal){
-    console.debug('flow.selectOption opening result modal');
     window.openResultModal();
     return;
   }
 
   if (opt.showAchievements){
-    console.debug('flow.selectOption opening achievements modal');
     window.openAchievementsModal();
+    return;
+  }
+
+  if (opt.quickLog){
+    window.renderQuickLogList();
+    window.openQuickLogModal();
     return;
   }
 
@@ -214,33 +201,34 @@ function selectOption(opt){
 
   if (opt.value !== undefined){
     const currentStep = window.steps.find(s => s.id === window.currentStepId) || window.steps.find(s => s.options.some(o => o === opt));
-    if (!currentStep){
-      console.warn('flow.selectOption could not determine currentStep for answer', opt);
-    }
-    if (currentStep && currentStep.onAnswer){
-      console.debug('flow.selectOption executing onAnswer', { stepId: currentStep.id, value: opt.value });
-      currentStep.onAnswer(opt.value);
+    if (currentStep && currentStep.onAnswer) currentStep.onAnswer(opt.value);
+
+    // 通学・通勤距離が登録済みなら distance ステップを自動スキップする
+    if (currentStep && currentStep.id === 'transport'){
+      const savedKm = window.getCommuteKm ? window.getCommuteKm() : null;
+      if (savedKm !== null){
+        const kgPerKm = window.TRANSPORT[window.transportChoice].kgPerKm || 0;
+        const totalKm = savedKm * 2;
+        const kg = +(kgPerKm * totalKm).toFixed(2);
+        window.addResult('transport', kg, `移動: ${window.TRANSPORT[window.transportChoice].label} / 登録済みの距離（片道${savedKm}km・往復${totalKm}km）→ 約 ${kg}kg`);
+        setTimeout(() => goToStep('electricity'), 300);
+        return;
+      }
     }
   }
 
   if (opt.restart){
-    console.debug('flow.selectOption restarting flow');
     return setTimeout(restart, 300);
   }
 
   if (opt.next === 'result'){
-    console.debug('flow.selectOption navigating to result');
     setTimeout(showResult, 400);
-  } else if (opt.next){
-    console.debug('flow.selectOption navigating to next step', opt.next);
-    setTimeout(() => goToStep(opt.next), 300);
   } else {
-    console.warn('flow.selectOption has no next action', opt);
+    setTimeout(() => goToStep(opt.next), 300);
   }
 }
 
 function showResult(){
-  console.debug('flow.showResult start', { state: window.state, currentStepId: window.currentStepId, lastQuizCorrect: window.lastQuizCorrect });
   const { grade, cls, msg } = window.rankFor(window.state.total);
   const chart = window.buildBreakdownChart(window.state.breakdown);
   const message = window.state.total === 0
@@ -261,7 +249,6 @@ function showResult(){
   window.lastQuizCorrect = undefined;
   const weeklyResult = window.evaluateWeeklyChallenge(window.state.breakdown, window.state.total);
   const newBadges = window.checkAchievements(grade, streak, quizWasCorrect);
-  console.debug('flow.showResult summary', { grade, msg, streak, xpResult, weeklyResult, newBadges, updatedHistoryLength: updatedHistory.length });
   window.updateLevelBadge();
   window.vibrateForGrade(grade);
 
@@ -303,7 +290,7 @@ function showResult(){
 
   const body = document.getElementById('resultModalBody');
   if (body){
-    body.innerHTML = `\n      <div class="rank ${cls}">${grade}<span class="rank-label">ランク</span></div>\n      <p class="result-summary">本日の推定排出量: <strong>${window.state.total.toFixed(1)} kg CO2</strong></p>\n      <div class="result-breakdown">${chart}</div>\n      ${window.goalMessageHtml(window.state.goal, window.state.total)}\n      ${window.historyCompareHtml(updatedHistory, window.state.total)}\n      ${window.co2EquivalentHtml(window.state.total)}\n      <p class="result-message">${message}</p>\n      <p class="result-tip">${tipText}</p>\n      <div id="weatherTipSlot"></div>\n      <div class="xp-block">\n        <div class="xp-row"><span class="xp-label">Lv.${xpResult.level}</span><span class="xp-gain">+${xpResult.gained}XP</span></div>\n        <div class="xp-track"><div class="xp-fill" style="width:${(xpResult.xpIntoLevel / xpResult.xpPerLevel) * 100}%"></div></div>\n      </div>\n      ${streakBadgeHtml}\n      <div class="result-modal-actions">\n        <button id="resultAchievementsBtn" class="reply-btn" type="button">\n          <span class="btn-icon">🎓</span><span class="btn-text">認定証を見る</span>\n        </button>\n        <button id="resultRestartBtn" class="reply-btn restart" type="button">\n          <span class="btn-icon">↻</span><span class="btn-text">もう一度診断する</span>\n        </button>\n      </div>\n    `;
+    body.innerHTML = `\n      <div class="rank ${cls}">${grade}<span class="rank-label">ランク</span></div>\n      <p class="result-summary">本日の推定排出量: <strong>${window.state.total.toFixed(1)} kg CO2</strong></p>\n      <div class="result-breakdown">${chart}</div>\n      ${window.goalMessageHtml(window.state.goal, window.state.total)}\n      ${window.historyCompareHtml(updatedHistory, window.state.total)}\n      ${window.co2EquivalentHtml(window.state.total)}\n      ${window.co2ToYenHtml(window.state.breakdown)}\n      <p class="result-message">${message}</p>\n      <p class="result-tip">${tipText}</p>\n      <div id="weatherTipSlot"></div>\n      <div class="xp-block">\n        <div class="xp-row"><span class="xp-label">Lv.${xpResult.level}</span><span class="xp-gain">+${xpResult.gained}XP</span></div>\n        <div class="xp-track"><div class="xp-fill" style="width:${(xpResult.xpIntoLevel / xpResult.xpPerLevel) * 100}%"></div></div>\n      </div>\n      ${streakBadgeHtml}\n      <div class="result-modal-actions">\n        <button id="resultAchievementsBtn" class="reply-btn" type="button">\n          <span class="btn-icon">🎓</span><span class="btn-text">認定証を見る</span>\n        </button>\n        <button id="resultRestartBtn" class="reply-btn restart" type="button">\n          <span class="btn-icon">↻</span><span class="btn-text">もう一度診断する</span>\n        </button>\n      </div>\n    `;
     const restartBtn = document.getElementById('resultRestartBtn');
     if (restartBtn) restartBtn.onclick = () => { window.closeResultModal(); restart(); };
 
@@ -332,16 +319,12 @@ function showResult(){
 }
 
 function restart(){
-  console.debug('flow.restart resetting state');
   window.state.total = 0;
   window.state.goal = null;
   window.state.breakdown = { transport: 0, electricity: 0, meal: 0, waste: 0 };
   window.transportChoice = null;
-  window.lastQuizCorrect = undefined;
-  window.currentQuiz = null;
   window.updateGauge();
-  const chatLogEl = document.getElementById('chatLog');
-  if (chatLogEl) chatLogEl.innerHTML = '';
+  document.getElementById('chatLog').innerHTML = '';
   window.clearOptions();
   window.closeResultModal();
   window.closeCalendarModal();
@@ -354,3 +337,4 @@ function initApp(){
 }
 
 window.initApp = initApp;
+window.showResult = showResult;

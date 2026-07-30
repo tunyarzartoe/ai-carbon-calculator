@@ -178,6 +178,32 @@
                     </div>
                     <input type="file" id="importFileInput" accept="application/json" hidden>
                 </div>
+
+                <div class="data-manage">
+                    <h3 class="data-manage-heading">📍 通学・通勤距離</h3>
+                    <p class="data-manage-note" id="commuteStatusNote"></p>
+                    <div class="data-manage-actions">
+                        <button id="resetCommuteBtn" class="reply-btn" type="button">
+                            <span class="btn-icon">📍</span><span class="btn-text">距離をリセット</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== クイック記録 MODAL (10秒モード) ===== -->
+        <div id="quickLogOverlay" class="modal-overlay" aria-hidden="true">
+            <div class="modal quicklog-modal" role="dialog" aria-modal="true" aria-labelledby="quickLogTitle">
+                <div class="modal-handle"></div>
+                <div class="modal-head">
+                    <h2 id="quickLogTitle" class="modal-title">⚡ クイック記録</h2>
+                    <button id="quickLogClose" class="modal-close" aria-label="閉じる" type="button">✕</button>
+                </div>
+                <p class="quicklog-note">今日やったことにチェックするだけ。約10秒で記録できるよ（チェックしなかった項目は平均的な1日として計算するよ）。</p>
+                <div id="quickLogList" class="quicklog-list"></div>
+                <button id="quickLogSubmit" class="reply-btn restart" type="button">
+                    <span class="btn-icon">✅</span><span class="btn-text">記録する</span>
+                </button>
             </div>
         </div>
 
@@ -188,6 +214,9 @@
     <script src="javascript/quiz.js"></script>
     <script src="javascript/gamify.js"></script>
     <script src="javascript/realworld.js"></script>
+    <script src="javascript/cost.js"></script>
+    <script src="javascript/commute.js"></script>
+    <script src="javascript/quicklog.js"></script>
     <script src="javascript/chat.js"></script>
     <script src="javascript/modals.js"></script>
     <script src="javascript/flow.js"></script>

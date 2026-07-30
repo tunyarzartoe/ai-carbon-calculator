@@ -3,6 +3,7 @@ function closeAllModals(){
   closeCalendarModal();
   closeRankingModal();
   closeAchievementsModal();
+  closeQuickLogModal();
 }
 
 function setTab(id){
@@ -181,6 +182,7 @@ function openAchievementsModal(){
   const overlay = document.getElementById('achievementsOverlay');
   if (!overlay) return;
   window.renderAchievements();
+  if (window.renderCommuteStatus) window.renderCommuteStatus();
   overlay.classList.add('open');
   overlay.setAttribute('aria-hidden', 'false');
   setTab('navAchievements');
@@ -194,6 +196,21 @@ function closeAchievementsModal(){
   setTab('navChat');
 }
 
+function openQuickLogModal(){
+  closeAllModals();
+  const overlay = document.getElementById('quickLogOverlay');
+  if (!overlay) return;
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden', 'false');
+}
+
+function closeQuickLogModal(){
+  const overlay = document.getElementById('quickLogOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('open');
+  overlay.setAttribute('aria-hidden', 'true');
+}
+
 window.openResultModal = openResultModal;
 window.closeResultModal = closeResultModal;
 window.openCalendarModal = openCalendarModal;
@@ -205,4 +222,6 @@ window.openRankingModal = openRankingModal;
 window.closeRankingModal = closeRankingModal;
 window.openAchievementsModal = openAchievementsModal;
 window.closeAchievementsModal = closeAchievementsModal;
+window.openQuickLogModal = openQuickLogModal;
+window.closeQuickLogModal = closeQuickLogModal;
 window.closeAllModals = closeAllModals;

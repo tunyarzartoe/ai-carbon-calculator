@@ -44,6 +44,13 @@ if (achievementsClose) achievementsClose.onclick = () => window.closeAchievement
 const achievementsOverlay = document.getElementById('achievementsOverlay');
 if (achievementsOverlay) achievementsOverlay.onclick = (e) => { if (e.target === achievementsOverlay) window.closeAchievementsModal(); };
 
+const quickLogClose = document.getElementById('quickLogClose');
+if (quickLogClose) quickLogClose.onclick = () => window.closeQuickLogModal();
+const quickLogOverlay = document.getElementById('quickLogOverlay');
+if (quickLogOverlay) quickLogOverlay.onclick = (e) => { if (e.target === quickLogOverlay) window.closeQuickLogModal(); };
+const quickLogSubmit = document.getElementById('quickLogSubmit');
+if (quickLogSubmit) quickLogSubmit.onclick = () => window.submitQuickLog();
+
 window.updateLevelBadge();
 window.initApp();
 
