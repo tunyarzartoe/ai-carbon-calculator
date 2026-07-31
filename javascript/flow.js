@@ -159,15 +159,7 @@ function selectOption(opt){
     window.clearOptions();
     window.addBubble(opt.label, 'user');
     window.lastQuizCorrect = opt.correct;
-    // window.recordQuizAnswer(window.currentQuiz.id, opt.correct);
-    if (typeof window.recordQuizAnswer === "function") {
-
-    window.recordQuizAnswer(
-        window.currentQuiz?.id || "quiz",
-        opt.correct
-    );
-
-}
+    window.recordQuizAnswer(window.currentQuiz.id, opt.correct);
     const fact = window.currentQuiz.fact;
     const resultLine = opt.correct
       ? `🎉 正解！ ${fact}`
@@ -290,7 +282,7 @@ function showResult(){
 
   const body = document.getElementById('resultModalBody');
   if (body){
-    body.innerHTML = `\n      <div class="rank ${cls}">${grade}<span class="rank-label">ランク</span></div>\n      <p class="result-summary">本日の推定排出量: <strong>${window.state.total.toFixed(1)} kg CO2</strong></p>\n      <div class="result-breakdown">${chart}</div>\n      ${window.goalMessageHtml(window.state.goal, window.state.total)}\n      ${window.historyCompareHtml(updatedHistory, window.state.total)}\n      ${window.co2EquivalentHtml(window.state.total)}\n      ${window.co2ToYenHtml(window.state.breakdown)}\n      <p class="result-message">${message}</p>\n      <p class="result-tip">${tipText}</p>\n      <div id="weatherTipSlot"></div>\n      <div class="xp-block">\n        <div class="xp-row"><span class="xp-label">Lv.${xpResult.level}</span><span class="xp-gain">+${xpResult.gained}XP</span></div>\n        <div class="xp-track"><div class="xp-fill" style="width:${(xpResult.xpIntoLevel / xpResult.xpPerLevel) * 100}%"></div></div>\n      </div>\n      ${streakBadgeHtml}\n      <div class="result-modal-actions">\n        <button id="resultAchievementsBtn" class="reply-btn" type="button">\n          <span class="btn-icon">🎓</span><span class="btn-text">認定証を見る</span>\n        </button>\n        <button id="resultRestartBtn" class="reply-btn restart" type="button">\n          <span class="btn-icon">↻</span><span class="btn-text">もう一度診断する</span>\n        </button>\n      </div>\n    `;
+    body.innerHTML = `\n      <div class="rank ${cls}">${grade}<span class="rank-label">ランク</span></div>\n      <p class="result-summary">本日の推定排出量: <strong>${window.state.total.toFixed(1)} kg CO2</strong></p>\n      <div class="result-breakdown">${chart}</div>\n      ${window.goalMessageHtml(window.state.goal, window.state.total)}\n      ${window.historyCompareHtml(updatedHistory, window.state.total)}\n      ${window.co2EquivalentHtml(window.state.total)}\n      ${window.co2ToYenHtml(window.state.breakdown)}\n      ${window.monthlyGoalResultHtml ? window.monthlyGoalResultHtml() : ''}\n      <p class="result-message">${message}</p>\n      <p class="result-tip">${tipText}</p>\n      <div id="weatherTipSlot"></div>\n      <div class="xp-block">\n        <div class="xp-row"><span class="xp-label">Lv.${xpResult.level}</span><span class="xp-gain">+${xpResult.gained}XP</span></div>\n        <div class="xp-track"><div class="xp-fill" style="width:${(xpResult.xpIntoLevel / xpResult.xpPerLevel) * 100}%"></div></div>\n      </div>\n      ${streakBadgeHtml}\n      <div class="result-modal-actions">\n        <button id="resultAchievementsBtn" class="reply-btn" type="button">\n          <span class="btn-icon">🎓</span><span class="btn-text">認定証を見る</span>\n        </button>\n        <button id="resultRestartBtn" class="reply-btn restart" type="button">\n          <span class="btn-icon">↻</span><span class="btn-text">もう一度診断する</span>\n        </button>\n      </div>\n    `;
     const restartBtn = document.getElementById('resultRestartBtn');
     if (restartBtn) restartBtn.onclick = () => { window.closeResultModal(); restart(); };
 

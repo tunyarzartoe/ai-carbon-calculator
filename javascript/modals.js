@@ -93,6 +93,8 @@ function renderCalendar(){
     }
   }
 
+  if (window.renderMonthlyGoalCard) window.renderMonthlyGoalCard();
+
   if (trendEl){
     const totals = [];
     for (let d = 1; d <= daysInMonth; d++){

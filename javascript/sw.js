@@ -17,6 +17,7 @@ const SHELL_ASSETS = [
   './javascript/cost.js',
   './javascript/commute.js',
   './javascript/quicklog.js',
+  './javascript/monthlygoal.js',
   './javascript/chat.js',
   './javascript/modals.js',
   './javascript/flow.js',
