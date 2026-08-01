@@ -3,7 +3,8 @@
    オフラインでもアプリが開けるようにする。
    天気APIなど外部の動的リクエストはキャッシュ対象外（常にネットワークへ）。 */
 
-const CACHE_NAME = 'co2compass-shell-v1';
+// const CACHE_NAME = 'co2compass-shell-v1';
+const CACHE_NAME = 'co2compass-shell-v2';
 
 const SHELL_ASSETS = [
   './',
