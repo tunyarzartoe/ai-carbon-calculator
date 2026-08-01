@@ -7,6 +7,7 @@
    ========================================================= */
 
 window.COMMUTE_KM_KEY = 'co2compass_commute_km_v1';
+window.COMMUTE_MODE_KEY = 'co2compass_commute_mode_v1';
 
 window.getCommuteKm = function(){
   try {
@@ -19,12 +20,29 @@ window.getCommuteKm = function(){
   }
 };
 
+window.getCommuteMode = function(){
+  try {
+    const mode = localStorage.getItem(window.COMMUTE_MODE_KEY);
+    return mode ? mode : null;
+  } catch (e){
+    return null;
+  }
+};
+
 window.saveCommuteKm = function(km){
   try { localStorage.setItem(window.COMMUTE_KM_KEY, String(km)); } catch (e){ /* storage unavailable */ }
 };
 
+window.saveCommuteMode = function(mode){
+  if (typeof mode !== 'string' || mode === '') return;
+  try { localStorage.setItem(window.COMMUTE_MODE_KEY, mode); } catch (e){ /* storage unavailable */ }
+};
+
 window.resetCommuteKm = function(){
-  try { localStorage.removeItem(window.COMMUTE_KM_KEY); } catch (e){ /* storage unavailable */ }
+  try {
+    localStorage.removeItem(window.COMMUTE_KM_KEY);
+    localStorage.removeItem(window.COMMUTE_MODE_KEY);
+  } catch (e){ /* storage unavailable */ }
 };
 
 /* 実績・設定モーダル内に「登録済みの距離」の状態表示とリセットボタンを描画する。
@@ -35,8 +53,10 @@ window.renderCommuteStatus = function(){
   if (!note || !resetBtn) return;
 
   const km = window.getCommuteKm();
+  const mode = window.getCommuteMode();
+  const transportLabel = mode && window.TRANSPORT[mode] ? window.TRANSPORT[mode].label : null;
   note.textContent = km !== null
-    ? `📍 通学・通勤距離を片道${km}kmで記憶しています。次回の診断では距離の質問をスキップします。`
+    ? `📍 ${transportLabel ? transportLabel + ' を' : ''}片道${km}kmで記憶しています。次回の診断では距離の質問をスキップします。`
     : '📍 まだ距離は登録されていません。次回の診断で選んだ距離を自動で覚えます。';
 
   resetBtn.style.display = km !== null ? '' : 'none';

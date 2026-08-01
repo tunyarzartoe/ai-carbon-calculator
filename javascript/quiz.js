@@ -1,290 +1,152 @@
 /* =========================================================
-   クイズ機能
-   - CO2 Compass の診断フロー中に出題される一問一答クイズ
-   - flow.js の quiz ステップから
-       window.pickRandomQuiz(preferredCategory)
-     が呼ばれ、{ id, category, q, choices: [{label, correct}], fact }
-     の形で1問返す。choices は必ず3択。
+   quiz.js → CO2 豆知識・ニュース機能（アプリ内完結版）
+   ------------------------------------------------------------
+   「3択に答えて正解/不正解」をやめ、短い豆知識または
+   実際のニュース要約を読んでもらう形にする。外部リンクは
+   一切開かず、要約はすべてアプリ内でその場で表示する。
 
-   このバージョンでの改善点:
-   1. 各問題に category（transport/electricity/meal/waste/general）を
-      タグ付けし、flow.js が渡してくる「今日いちばんCO2が多かった
-      カテゴリ」に沿った問題を優先的に出す（ただのトリビアから、
-      本人の生活に直結した学びに変える）。
-   2. 間違えた問題は復習リストに入り、正解できるまで優先的に
-      再出題される（正解したら卒業）。
-   3. 全問出題し終えるまでは同じ問題を繰り返さない
-      （小さい問題バンクでもすぐ飽きないようにする）。
+   kind: 'tip'  → いつでも通用する評価軸で編集した基礎知識
+   kind: 'news' → 実際の統計・発表をもとにした要約（source/date付き）
+   ※ news の内容は編集部が要約したものであり、原文の引用ではない。
+   ※ news は日付が入っているため、半年〜1年に一度は内容を
+      見直して差し替えることをおすすめする（evergreenなtipは
+      差し替え不要）。
+
+   使い方（flow.js 側）:
+     window.pickInsight(preferredCategory)
+   → { id, category, kind, title, body, source, date } を1件返す
    ========================================================= */
 
-window.QUIZ_BANK = [
-  {
-    id: 'q1', category: 'transport',
-    q: '電車と車、同じ距離を移動したときCO2排出量が少ないのはどっち？',
-    choices: [
-      { label: '電車', correct: true },
-      { label: '車（ガソリン車）', correct: false },
-      { label: '同じくらい', correct: false }
-    ],
-    fact: '電車は多くの人を一度に運べるため、1人あたりのCO2排出量は車よりずっと少ないんだ。'
-  },
-  {
-    id: 'q2', category: 'meal',
-    q: '肉料理（特に牛肉）は野菜中心の食事と比べてCO2排出量がどうなる？',
-    choices: [
-      { label: 'かなり多くなる', correct: true },
-      { label: 'ほとんど変わらない', correct: false },
-      { label: '逆に少なくなる', correct: false }
-    ],
-    fact: '牛は消化の過程でメタンガスを出す上、飼育に広い土地や飼料が必要なため、牛肉はCO2排出量が特に多い食材なんだ。'
-  },
-  {
-    id: 'q3', category: 'electricity',
-    q: 'エアコンの設定温度を夏に1°C上げると、消費電力はどのくらい変わる？',
-    choices: [
-      { label: '約10%減る', correct: true },
-      { label: 'ほぼ変わらない', correct: false },
-      { label: '逆に増える', correct: false }
-    ],
-    fact: '環境省によると、冷房の設定温度を1°C上げるだけで消費電力を約10%削減できると言われているよ。'
-  },
-  {
-    id: 'q4', category: 'waste',
-    q: 'ゴミをきちんと分別してリサイクルすると、何が減らせる？',
-    choices: [
-      { label: '新しい資源の採取と焼却時のCO2', correct: true },
-      { label: '家庭の電気代だけ', correct: false },
-      { label: '何も変わらない', correct: false }
-    ],
-    fact: 'リサイクルすれば新たに原料を採掘・製造する必要が減り、焼却するゴミも減るので、CO2排出を抑えられるよ。'
-  },
-  {
-    id: 'q5', category: 'meal',
-    q: '「地産地消」（地元で作られたものを地元で消費すること）がエコな理由は？',
-    choices: [
-      { label: '輸送距離が短くCO2が減るから', correct: true },
-      { label: '値段が必ず安くなるから', correct: false },
-      { label: '生産量が必ず増えるから', correct: false }
-    ],
-    fact: '食べ物を遠くから運ぶほど輸送にCO2がかかるよ。地元産を選ぶと「フードマイレージ」が減らせるんだ。'
-  },
-  {
-    id: 'q6', category: 'general',
-    q: '世界の温室効果ガスの中で、最も排出量が多いのはどれ？',
-    choices: [
-      { label: '二酸化炭素（CO2）', correct: true },
-      { label: 'メタン', correct: false },
-      { label: 'フロンガス', correct: false }
-    ],
-    fact: '二酸化炭素は排出量そのものは多いけど1分子あたりの温室効果は比較的小さく、メタンは少量でも影響が大きいと言われているよ。'
-  },
-  {
-    id: 'q7', category: 'electricity',
-    q: 'LED電球は白熱電球と比べて消費電力がどのくらい少ない？',
-    choices: [
-      { label: '約80%少ない', correct: true },
-      { label: '約20%少ない', correct: false },
-      { label: 'ほぼ同じ', correct: false }
-    ],
-    fact: 'LED電球は白熱電球の5分の1程度の電力で同じ明るさを出せると言われていて、電気代もCO2も大幅に削減できるよ。'
-  },
-  {
-    id: 'q8', category: 'electricity',
-    q: '使っていない部屋の電気をこまめに消すことは、なぜ大事？',
-    choices: [
-      { label: '無駄な発電（＝CO2排出）を防げるから', correct: true },
-      { label: '電球が長持ちしなくなるだけ', correct: false },
-      { label: '特に意味はない', correct: false }
-    ],
-    fact: '発電の多くは化石燃料に頼っているため、使っていない電気を消すだけでも間接的にCO2排出を減らせるよ。'
-  },
-  {
-    id: 'q9', category: 'transport',
-    q: '飛行機での移動は、電車と比べてCO2排出量がどうなる？',
-    choices: [
-      { label: '同じ距離ならかなり多くなる', correct: true },
-      { label: 'ほぼ同じ', correct: false },
-      { label: '飛行機の方が少ない', correct: false }
-    ],
-    fact: '飛行機は高高度で燃料を燃やすため、同じ距離でも電車の何倍もCO2を排出すると言われているよ。'
-  },
-  {
-    id: 'q10', category: 'meal',
-    q: '「フードロス（食品廃棄）」を減らすことがエコにつながる理由は？',
-    choices: [
-      { label: '生産・輸送・廃棄すべての段階のCO2が無駄になるから', correct: true },
-      { label: '値段が上がるから', correct: false },
-      { label: '特に関係はない', correct: false }
-    ],
-    fact: '食べ物を作って運んで捨てるまでの全プロセスにCO2がかかっているので、食品ロスを減らすことは大きな削減につながるよ。'
-  },
-  {
-    id: 'q11', category: 'waste',
-    q: 'マイバッグ（エコバッグ）を使うことの主なメリットは？',
-    choices: [
-      { label: 'レジ袋（プラスチック）の生産・廃棄を減らせる', correct: true },
-      { label: '買い物の量が増える', correct: false },
-      { label: 'CO2とは無関係', correct: false }
-    ],
-    fact: 'プラスチック製のレジ袋は石油から作られていて、生産にも廃棄（焼却）にもCO2が発生するんだ。'
-  },
-  {
-    id: 'q12', category: 'electricity',
-    q: '夏、カーテンやブラインドを閉めて日差しを遮ると効果があるのは？',
-    choices: [
-      { label: '室温上昇を抑え冷房の電力を節約できる', correct: true },
-      { label: '部屋が暗くなるだけで意味はない', correct: false },
-      { label: '逆に電気代が増える', correct: false }
-    ],
-    fact: '直射日光を遮るだけで室温上昇をかなり抑えられ、冷房の設定を下げすぎずに済むので節電になるよ。'
-  },
-  {
-    id: 'q13', category: 'transport',
-    q: '自転車通勤・通学のCO2排出量は、車と比べてどうなる？',
-    choices: [
-      { label: 'ほぼゼロ', correct: true },
-      { label: '車の半分くらい', correct: false },
-      { label: '車と同じくらい', correct: false }
-    ],
-    fact: '自転車は燃料を使わないため、走行中のCO2排出はほぼゼロ。健康にもいいから一石二鳥だね。'
-  },
-  {
-    id: 'q14', category: 'electricity',
-    q: '冷蔵庫にものを詰め込みすぎると、なぜ電力の無駄になる？',
-    choices: [
-      { label: '冷気の循環が悪くなり余計に冷やそうとするから', correct: true },
-      { label: '冷蔵庫が壊れやすくなるだけ', correct: false },
-      { label: '特に影響はない', correct: false }
-    ],
-    fact: '冷蔵庫は庫内に冷気を循環させて冷やしているので、詰め込みすぎると効率が落ちて余分な電力を使ってしまうんだ。'
-  },
-  {
-    id: 'q15', category: 'general',
-    q: '「カーボンニュートラル」とはどんな意味？',
-    choices: [
-      { label: 'CO2の排出量と吸収・除去量を差し引きゼロにすること', correct: true },
-      { label: 'CO2の排出を完全に禁止すること', correct: false },
-      { label: '電気を一切使わないこと', correct: false }
-    ],
-    fact: 'カーボンニュートラルは排出をゼロにするのではなく、植林などの吸収量と相殺して実質ゼロを目指す考え方だよ。'
-  },
-  {
-    id: 'q16', category: 'waste',
-    q: '古着や中古品を活用（リユース）することのメリットは？',
-    choices: [
-      { label: '新品を作る際のCO2排出を減らせる', correct: true },
-      { label: '流行に敏感になれるだけ', correct: false },
-      { label: 'CO2とは関係がない', correct: false }
-    ],
-    fact: '新しい服や製品を作るには原料の生産や製造工程でCO2が発生するので、リユースはその分を丸ごと削減できるよ。'
-  },
-  {
-    id: 'q17', category: 'electricity',
-    q: '水道の使用量を減らすことも間接的にCO2削減につながる理由は？',
-    choices: [
-      { label: '浄水・給水にも電力（エネルギー）が使われているから', correct: true },
-      { label: '水そのものがCO2を出すから', correct: false },
-      { label: '関係はまったくない', correct: false }
-    ],
-    fact: '水をきれいにして各家庭に送るポンプや浄水設備にも電力が必要で、その発電時にCO2が発生しているんだ。'
-  }
+window.CO2_INSIGHTS = [
+  /* ---- evergreen tips ---- */
+  { id: 'i1', category: 'transport', kind: 'tip',
+    title: '電車は「みんなで乗るから」エコになる',
+    body: '同じ距離を移動しても、電車は一度に大勢を運べるため、1人あたりのCO2排出量は車よりずっと少なくなるよ。' },
+  { id: 'i2', category: 'transport', kind: 'tip',
+    title: '飛行機は距離の割にCO2が多い',
+    body: '飛行機は高高度で燃料を大量に燃やすため、同じ距離でも電車の何倍ものCO2を出すと言われているよ。' },
+  { id: 'i3', category: 'transport', kind: 'tip',
+    title: '自転車移動はほぼゼロ排出',
+    body: '自転車は燃料を使わないから、走行中のCO2排出はほぼゼロ。健康にもいいから一石二鳥だね。' },
+  { id: 'i4', category: 'electricity', kind: 'tip',
+    title: '設定温度1℃で消費電力が変わる',
+    body: '環境省によると、夏の冷房の設定温度を1℃上げるだけで、消費電力を約10%減らせると言われているよ。' },
+  { id: 'i5', category: 'electricity', kind: 'tip',
+    title: 'LED電球は白熱電球の5分の1の電力',
+    body: 'LED電球は白熱電球よりずっと少ない電力で同じ明るさを出せるから、電気代もCO2も大きく減らせるよ。' },
+  { id: 'i6', category: 'electricity', kind: 'tip',
+    title: '冷蔵庫は詰め込みすぎると損する',
+    body: '冷蔵庫は庫内に冷気を循環させて冷やしているから、詰め込みすぎると効率が落ちて余分な電力を使ってしまうよ。' },
+  { id: 'i7', category: 'meal', kind: 'tip',
+    title: '牛肉はCO2排出量が特に多い食材',
+    body: '牛は消化の過程でメタンガスを出す上、飼育に広い土地や飼料が必要だから、牛肉はCO2排出量が特に多いんだ。' },
+  { id: 'i8', category: 'meal', kind: 'tip',
+    title: '地元産を選ぶと「フードマイレージ」が減る',
+    body: '食べ物を遠くから運ぶほど輸送にCO2がかかるよ。地元で作られたものを選ぶだけでも輸送分のCO2を減らせるんだ。' },
+  { id: 'i9', category: 'waste', kind: 'tip',
+    title: 'リサイクルで採取と焼却のCO2を削減',
+    body: 'リサイクルすれば新たに原料を採掘・製造する必要が減り、焼却するゴミも減るので、CO2排出を抑えられるよ。' },
+  { id: 'i10', category: 'waste', kind: 'tip',
+    title: '古着・中古品は「作らない選択」',
+    body: '新しい服や製品を作るには原料の生産や製造工程でCO2が発生するから、リユースはその分をまるごと削減できるよ。' },
+  { id: 'i11', category: 'general', kind: 'tip',
+    title: '「カーボンニュートラル」の本当の意味',
+    body: 'CO2の排出をゼロにするのではなく、植林などの吸収量と相殺して差し引きゼロを目指す考え方のことだよ。' },
+
+  /* ---- 実際の統計・発表にもとづく要約（編集部パラフレーズ、原文の引用ではない）---- */
+  { id: 'n1', category: 'electricity', kind: 'news',
+    title: '日本の電源構成、再エネが約26.6%に',
+    body: '2026年時点の日本の発電量は火力が約65%を占める一方、再生可能エネルギーは太陽光・水力・バイオマスなどを合わせて約26.6%まで伸びてきているよ。',
+    source: '経済産業省関連データ', date: '2026年' },
+  { id: 'n2', category: 'electricity', kind: 'news',
+    title: '2026年度、企業の「炭素コスト」が本格化',
+    body: '2026年度からGX-ETS（排出量取引制度）が本格運用され、企業がCO2排出にかかるコストを経営判断に組み込む動きが進んでいるよ。',
+    source: '経済産業省', date: '2026年' },
+  { id: 'n3', category: 'meal', kind: 'news',
+    title: '日本の食品ロス、3年連続で減少',
+    body: '令和6年度の食品ロス発生量は461万トンで前年から3万トン減少。ただし内訳を見ると、事業系は減った一方、家庭からのロスはやや増えているんだ。',
+    source: '環境省・消費者庁', date: '2026年6月発表' },
+  { id: 'n4', category: 'meal', kind: 'news',
+    title: '食品ロス半減目標、日本はすでに達成',
+    body: '日本は2030年までに食品ロスを半減させる目標を先んじて達成し、国連環境計画（UNEP）にも紹介される水準に。ただし家庭からのロス削減は依然として課題として残っているよ。',
+    source: '環境省', date: '2026年4月発表' },
+  { id: 'n5', category: 'waste', kind: 'news',
+    title: '世界のプラスチック、リサイクル率はまだ9%',
+    body: 'OECDの調査によると、これまで世界で生産されたプラスチックのうち実際にリサイクルされたのはわずか9%で、残りの大半は焼却・埋立・環境への流出だったんだ。',
+    source: 'OECD', date: '調査時点' },
+  { id: 'n6', category: 'waste', kind: 'news',
+    title: '日本は2035年までにプラ100%有効利用を目標',
+    body: 'プラスチック資源循環戦略では、2035年までに使用済みプラスチックをリユース・リサイクルなどで100%有効活用することが目標として掲げられているよ。',
+    source: '環境省', date: '2021年策定・進行中' }
 ];
 
 /* =========================================================
-   出題履歴・復習リストの管理（localStorage）
+   出題（表示）履歴の管理（localStorage）
+   すべて見終わるまでは同じ内容を繰り返さない。
    ========================================================= */
-const QUIZ_STATE_KEY = 'co2compass-quiz-state';
+const INSIGHT_STATE_KEY = 'co2compass-insight-state';
 
-function loadQuizState(){
+function loadInsightState(){
   try {
-    const raw = localStorage.getItem(QUIZ_STATE_KEY);
+    const raw = localStorage.getItem(INSIGHT_STATE_KEY);
     const parsed = raw ? JSON.parse(raw) : {};
-    return {
-      seen: Array.isArray(parsed.seen) ? parsed.seen : [],   // 一巡した問題のid
-      wrong: Array.isArray(parsed.wrong) ? parsed.wrong : [] // まだ正解できていない問題のid（復習対象）
-    };
+    return { seen: Array.isArray(parsed.seen) ? parsed.seen : [] };
   } catch (e){
-    console.error('quiz.loadQuizState failed', e);
-    return { seen: [], wrong: [] };
+    console.error('quiz.loadInsightState failed', e);
+    return { seen: [] };
   }
 }
 
-function saveQuizState(state){
+function saveInsightState(state){
   try {
-    localStorage.setItem(QUIZ_STATE_KEY, JSON.stringify(state));
+    localStorage.setItem(INSIGHT_STATE_KEY, JSON.stringify(state));
   } catch (e){
-    console.error('quiz.saveQuizState failed', e);
+    console.error('quiz.saveInsightState failed', e);
   }
 }
 
-window.lastQuizIndex = null; // 直前に出した問題のid（連続で同じ問題を避けるため）
+window.lastInsightIndex = null; // 直前に出した内容のid（連続で同じものを避ける）
 
-/* 出題ロジックの優先順位:
-   1. 苦手カテゴリ × まだ正解できていない問題（一番学びになる復習）
-   2. 苦手カテゴリ × まだ出していない問題（新しい学び、本人に関係が深いテーマ）
-   3. カテゴリ問わず、まだ正解できていない問題（復習）
-   4. カテゴリ問わず、まだ出していない問題（全問一巡してから繰り返す）
-   5. 全問出題済みなら履歴をリセットして最初から
-   直前に出した問題（同じid）は、選択肢が複数あるかぎり避ける。 */
-window.pickRandomQuiz = function(preferredCategory){
-  const bank = window.QUIZ_BANK;
+/* preferredCategory（今日いちばんCO2が多かったカテゴリ）に合わせて
+   豆知識/ニュースを1件選ぶ。優先順位:
+   1. そのカテゴリ × まだ見ていないもの
+   2. カテゴリ問わず、まだ見ていないもの
+   3. 全部見終えていたら履歴をリセットして最初から */
+window.pickInsight = function(preferredCategory){
+  const bank = window.CO2_INSIGHTS;
   if (!bank || bank.length === 0) return null;
 
-  const state = loadQuizState();
-  const notLast = bank.filter(q => q.id !== window.lastQuizIndex);
+  const state = loadInsightState();
+  const notLast = bank.filter(i => i.id !== window.lastInsightIndex);
   const pool = notLast.length ? notLast : bank;
 
-  const inCategory = q => !preferredCategory || q.category === preferredCategory;
-  const isWrong = q => state.wrong.includes(q.id);
-  const isUnseen = q => !state.seen.includes(q.id);
+  const inCategory = i => !preferredCategory || i.category === preferredCategory;
+  const isUnseen = i => !state.seen.includes(i.id);
 
-  let candidates = pool.filter(q => inCategory(q) && isWrong(q));
-  if (candidates.length === 0) candidates = pool.filter(q => inCategory(q) && isUnseen(q));
-  if (candidates.length === 0) candidates = pool.filter(isWrong);
+  let candidates = pool.filter(i => inCategory(i) && isUnseen(i));
   if (candidates.length === 0) candidates = pool.filter(isUnseen);
-
   if (candidates.length === 0){
-    // 全問出題し終えたので出題履歴だけリセットする（復習リストは維持する）
     state.seen = [];
-    saveQuizState(state);
+    saveInsightState(state);
     const fresh = pool.filter(inCategory);
     candidates = fresh.length ? fresh : pool;
   }
 
   const picked = candidates[Math.floor(Math.random() * candidates.length)];
-  window.lastQuizIndex = picked.id;
+  window.lastInsightIndex = picked.id;
 
   if (!state.seen.includes(picked.id)) state.seen.push(picked.id);
-  saveQuizState(state);
+  saveInsightState(state);
 
-  console.debug('quiz.pickRandomQuiz', {
-    preferredCategory, pickedId: picked.id, pickedCategory: picked.category,
-    candidateCount: candidates.length, reviewCount: state.wrong.length
-  });
-  return picked;
-};
+  console.debug('quiz.pickInsight', { preferredCategory, pickedId: picked.id, category: picked.category, kind: picked.kind });
 
-/* 回答のたびに flow.js から呼ばれる（既存の呼び出し口をそのまま利用）。
-   間違えたら復習リストに追加、正解したら復習リストから卒業する。 */
-window.recordQuizAnswer = function(quizId, correct){
-  const state = loadQuizState();
-  const idx = state.wrong.indexOf(quizId);
-  if (correct){
-    if (idx >= 0) state.wrong.splice(idx, 1);
-  } else if (idx < 0){
-    state.wrong.push(quizId);
-  }
-  saveQuizState(state);
-  console.debug('quiz.recordQuizAnswer', { quizId, correct, reviewCount: state.wrong.length });
-};
-
-/* 認定証モーダルなどで「クイズの成績」を表示したくなったときのための集計。
-   例: 累計で触れた問題数、まだ復習が必要な問題数など。 */
-window.getQuizStats = function(){
-  const state = loadQuizState();
   return {
-    totalQuestions: window.QUIZ_BANK.length,
-    seenCount: state.seen.length,
-    reviewCount: state.wrong.length
+    id: picked.id,
+    category: picked.category,
+    kind: picked.kind,
+    title: picked.title,
+    body: picked.body,
+    source: picked.source || null,
+    date: picked.date || null
   };
 };

@@ -51,7 +51,10 @@ window.steps = [
       value: key,
       next: 'distance'
     })),
-    onAnswer: function(val){ window.transportChoice = val; }
+    onAnswer: function(val){
+      window.transportChoice = val;
+      if (window.saveCommuteMode) window.saveCommuteMode(val);
+    }
   },
   {
     id: 'distance',
@@ -66,6 +69,7 @@ window.steps = [
       const kgPerKm = window.TRANSPORT[window.transportChoice].kgPerKm || 0;
       const km = window.DISTANCE_KM[val].km || 0;
       if (window.saveCommuteKm) window.saveCommuteKm(km);
+      if (window.saveCommuteMode) window.saveCommuteMode(window.transportChoice);
       const totalKm = km * 2;
       const kg = +(kgPerKm * totalKm).toFixed(2);
       window.addResult('transport', kg, `移動: ${window.TRANSPORT[window.transportChoice].label} / ${window.DISTANCE_KM[val].label}（往復 ${totalKm}km）→ 約 ${kg}kg`);
@@ -115,17 +119,32 @@ window.steps = [
       window.addResult('waste', kg, `ゴミ分別: ${window.WASTE[val].label} → 約 ${kg}kg`);
     }
   },
+  // {
+  //   id: 'quiz',
+  //   ai: function(){
+  //     const breakdown = window.state.breakdown;
+  //     const preferredCategory = Object.keys(breakdown).sort((a, b) => breakdown[b] - breakdown[a])[0];
+  //     window.currentQuiz = window.pickRandomQuiz(preferredCategory);
+  //     return [`ちょっと一息、クイズです🧠<br>${window.currentQuiz.q}`];
+  //   },
+  //   options: [], // populated dynamically in goToStep for this step
+  //   onAnswer: function(){} // handled specially in selectQuizAnswer
+  // }
   {
-    id: 'quiz',
-    ai: function(){
-      const breakdown = window.state.breakdown;
-      const preferredCategory = Object.keys(breakdown).sort((a, b) => breakdown[b] - breakdown[a])[0];
-      window.currentQuiz = window.pickRandomQuiz(preferredCategory);
-      return [`ちょっと一息、クイズです🧠<br>${window.currentQuiz.q}`];
-    },
-    options: [], // populated dynamically in goToStep for this step
-    onAnswer: function(){} // handled specially in selectQuizAnswer
-  }
+  id: 'quiz',
+  ai: function(){
+    const breakdown = window.state.breakdown;
+    const preferredCategory = Object.keys(breakdown).sort((a, b) => breakdown[b] - breakdown[a])[0];
+    window.currentInsight = window.pickInsight(preferredCategory);
+    const insight = window.currentInsight;
+    const tag = insight.kind === 'news'
+      ? `📰 ${insight.date}・${insight.source}より`
+      : '💡 豆知識';
+    return [`ちょっと一息🌍<br>${tag}`, `<strong>${insight.title}</strong><br>${insight.body}`];
+  },
+  options: [],
+  onAnswer: function(){}
+}
 ];
 
 function goToStep(stepId){
@@ -136,21 +155,32 @@ function goToStep(stepId){
   window.currentStepId = stepId;
   window.clearOptions();
 
+  // if (stepId === 'quiz'){
+  //   const lines = [window.randomAck(), ...step.ai()];
+  //   const quiz = window.currentQuiz;
+  //   const letters = ['Ⓐ', 'Ⓑ', 'Ⓒ'];
+  //   const quizOptions = quiz.choices.map((choice, i) => ({
+  //     label: choice.label,
+  //     icon: letters[i] || '❓',
+  //     correct: choice.correct,
+  //     isQuizAnswer: true
+  //   }));
+  //   window.aiSpeak(lines, () => window.renderOptions(quizOptions, selectOption));
+  //   return;
+  // }
   if (stepId === 'quiz'){
-    const lines = [window.randomAck(), ...step.ai()];
-    const quiz = window.currentQuiz;
-    const letters = ['Ⓐ', 'Ⓑ', 'Ⓒ'];
-    const quizOptions = quiz.choices.map((choice, i) => ({
-      label: choice.label,
-      icon: letters[i] || '❓',
-      correct: choice.correct,
-      isQuizAnswer: true
-    }));
-    window.aiSpeak(lines, () => window.renderOptions(quizOptions, selectOption));
+    const aiOutput = typeof step.ai === 'function' ? step.ai() : step.ai;
+    const lines = Array.isArray(aiOutput) ? [window.randomAck(), ...aiOutput] : [window.randomAck(), String(aiOutput)];
+    window.aiSpeak(lines, () => window.renderOptions([
+      { label: '次へ', icon: '➡️', next: 'result' }
+    ], selectOption));
     return;
   }
 
-  const lines = stepId === 'intro' ? step.ai() : [window.randomAck(), ...step.ai];
+  const aiOutput = typeof step.ai === 'function' ? step.ai() : step.ai;
+  const lines = Array.isArray(aiOutput)
+    ? (stepId === 'intro' ? aiOutput : [window.randomAck(), ...aiOutput])
+    : (stepId === 'intro' ? [String(aiOutput)] : [window.randomAck(), String(aiOutput)]);
   window.aiSpeak(lines, () => window.renderOptions(step.options, selectOption));
 }
 
@@ -282,7 +312,7 @@ function showResult(){
 
   const body = document.getElementById('resultModalBody');
   if (body){
-    body.innerHTML = `\n      <div class="rank ${cls}">${grade}<span class="rank-label">ランク</span></div>\n      <p class="result-summary">本日の推定排出量: <strong>${window.state.total.toFixed(1)} kg CO2</strong></p>\n      <div class="result-breakdown">${chart}</div>\n      ${window.goalMessageHtml(window.state.goal, window.state.total)}\n      ${window.historyCompareHtml(updatedHistory, window.state.total)}\n      ${window.co2EquivalentHtml(window.state.total)}\n      ${window.co2ToYenHtml(window.state.breakdown)}\n      ${window.monthlyGoalResultHtml ? window.monthlyGoalResultHtml() : ''}\n      <p class="result-message">${message}</p>\n      <p class="result-tip">${tipText}</p>\n      <div id="weatherTipSlot"></div>\n      <div class="xp-block">\n        <div class="xp-row"><span class="xp-label">Lv.${xpResult.level}</span><span class="xp-gain">+${xpResult.gained}XP</span></div>\n        <div class="xp-track"><div class="xp-fill" style="width:${(xpResult.xpIntoLevel / xpResult.xpPerLevel) * 100}%"></div></div>\n      </div>\n      ${streakBadgeHtml}\n      <div class="result-modal-actions">\n        <button id="resultAchievementsBtn" class="reply-btn" type="button">\n          <span class="btn-icon">🎓</span><span class="btn-text">認定証を見る</span>\n        </button>\n        <button id="resultRestartBtn" class="reply-btn restart" type="button">\n          <span class="btn-icon">↻</span><span class="btn-text">もう一度診断する</span>\n        </button>\n      </div>\n    `;
+    body.innerHTML = `\n      <div class="rank ${cls}">${grade}<span class="rank-label">ランク</span></div>\n      <p class="result-summary">本日の推定排出量: <strong>${window.state.total.toFixed(1)} kg CO2</strong></p>\n      <div class="result-breakdown">${chart}</div>\n      ${window.goalMessageHtml(window.state.goal, window.state.total)}\n      ${window.historyCompareHtml(updatedHistory, window.state.total)}\n      ${window.co2EquivalentHtml(window.state.total)}\n      ${window.co2ToYenHtml(window.state.breakdown)}\n      ${window.quickLogSummaryHtml ? window.quickLogSummaryHtml() : ''}\n      ${window.monthlyGoalResultHtml ? window.monthlyGoalResultHtml() : ''}\n      <p class="result-message">${message}</p>\n      <p class="result-tip">${tipText}</p>\n      <div id="weatherTipSlot"></div>\n      <div class="xp-block">\n        <div class="xp-row"><span class="xp-label">Lv.${xpResult.level}</span><span class="xp-gain">+${xpResult.gained}XP</span></div>\n        <div class="xp-track"><div class="xp-fill" style="width:${(xpResult.xpIntoLevel / xpResult.xpPerLevel) * 100}%"></div></div>\n      </div>\n      ${streakBadgeHtml}\n      <div class="result-modal-actions">\n        <button id="resultAchievementsBtn" class="reply-btn" type="button">\n          <span class="btn-icon">🎓</span><span class="btn-text">認定証を見る</span>\n        </button>\n        <button id="resultRestartBtn" class="reply-btn restart" type="button">\n          <span class="btn-icon">↻</span><span class="btn-text">もう一度診断する</span>\n        </button>\n      </div>\n    `;
     const restartBtn = document.getElementById('resultRestartBtn');
     if (restartBtn) restartBtn.onclick = () => { window.closeResultModal(); restart(); };
 
@@ -315,6 +345,8 @@ function restart(){
   window.state.goal = null;
   window.state.breakdown = { transport: 0, electricity: 0, meal: 0, waste: 0 };
   window.transportChoice = null;
+  window.quickLogFromQuickMode = false;
+  window.quickLogSelectedActions = [];
   window.updateGauge();
   document.getElementById('chatLog').innerHTML = '';
   window.clearOptions();
