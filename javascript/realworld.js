@@ -260,7 +260,7 @@ window.generateCertificateCanvas = function(certData){
   ctx.textAlign = 'center';
 
   // seal
-  drawCertificateSeal(ctx, W / 2, 128, 48, c1, c2);
+  drawCertificateSeal(ctx, W / 2, 128, 48, '#3DFFB0', '#33C7E8');
 
   // tier badge
   drawTierBadge(ctx, W / 2, 208, `${tier.emoji} ${tier.label}会員`, c1, c2);

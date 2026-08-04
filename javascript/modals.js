@@ -4,6 +4,7 @@ function closeAllModals(){
   closeRankingModal();
   closeAchievementsModal();
   closeQuickLogModal();
+  closeDayDetailModal();
 }
 
 function setTab(id){
@@ -144,16 +145,46 @@ function selectCalendarDay(key, entry){
   const btn = document.querySelector(`.cal-day[data-date="${key}"]`);
   if (btn) btn.classList.add('selected');
 
-  const detail = document.getElementById('calendarDetail');
-  if (!detail || !entry) return;
-  const { grade } = window.rankFor(entry.total);
-  const chartHtml = Object.entries(entry.breakdown).map(([k, v]) => {
-    const max = Math.max(...Object.values(entry.breakdown), 0.01);
-    const pct = Math.max(Math.min((v / max) * 100, 100), v > 0 ? 3 : 0);
-    return `\n      <div class="chart-row">\n        <span class="chart-label">${window.CATEGORY_LABELS[k]}</span>\n        <div class="chart-track"><div class="chart-fill cat-${k}" style="width:${pct}%"></div></div>\n        <span class="chart-value">${v.toFixed(2)}kg</span>\n      </div>`;
-  }).join('');
+  if (!entry) return;
+  openDayDetailModal(key, entry);
+}
 
-  detail.innerHTML = `\n    <p class="cd-date">${key}</p>\n    <p class="cd-total">合計 <strong>${entry.total.toFixed(1)} kg CO2</strong>（${grade}ランク）</p>\n    <div class="result-breakdown">${chartHtml}</div>\n  `;
+/* カレンダーで日付をタップしたときに、その日の記録を専用モーダルで
+   きちんと見せる（診断結果モーダルと同じ構成: ランク・内訳・換算・コスト）。
+   カレンダーモーダルは開いたままにして、このモーダルはその上に重ねる
+   （閉じたらカレンダーに自然に戻れるようにするため）。 */
+function openDayDetailModal(key, entry){
+  const overlay = document.getElementById('dayDetailOverlay');
+  const titleEl = document.getElementById('dayDetailTitle');
+  const bodyEl = document.getElementById('dayDetailBody');
+  if (!overlay || !titleEl || !bodyEl) return;
+
+  const { grade, cls } = window.rankFor(entry.total);
+  const weekday = window.WEEKDAY_LABELS ? window.WEEKDAY_LABELS[new Date(key + 'T00:00:00').getDay()] : '';
+  titleEl.textContent = weekday ? `${key}（${weekday}）` : key;
+
+  const chartHtml = window.buildBreakdownChart(entry.breakdown);
+  const equivHtml = window.co2EquivalentHtml ? window.co2EquivalentHtml(entry.total) : '';
+  const costHtml = window.co2ToYenHtml ? window.co2ToYenHtml(entry.breakdown) : '';
+
+  bodyEl.innerHTML = `
+    <div class="rank ${cls}">${grade}<span class="rank-label">ランク</span></div>
+    <p class="result-summary">この日の推定排出量: <strong>${entry.total.toFixed(1)} kg CO2</strong></p>
+    <div class="result-breakdown">${chartHtml}</div>
+    ${equivHtml}
+    ${costHtml}
+  `;
+
+  overlay.classList.add('open');
+  overlay.setAttribute('aria-hidden', 'false');
+}
+
+function closeDayDetailModal(){
+  const overlay = document.getElementById('dayDetailOverlay');
+  if (!overlay) return;
+  overlay.classList.remove('open');
+  overlay.setAttribute('aria-hidden', 'true');
+  document.querySelectorAll('.cal-day.selected').forEach(el => el.classList.remove('selected'));
 }
 
 function moveCalendarMonth(offset){
@@ -226,4 +257,6 @@ window.openAchievementsModal = openAchievementsModal;
 window.closeAchievementsModal = closeAchievementsModal;
 window.openQuickLogModal = openQuickLogModal;
 window.closeQuickLogModal = closeQuickLogModal;
+window.openDayDetailModal = openDayDetailModal;
+window.closeDayDetailModal = closeDayDetailModal;
 window.closeAllModals = closeAllModals;

@@ -48,6 +48,11 @@ const quickLogClose = document.getElementById('quickLogClose');
 if (quickLogClose) quickLogClose.onclick = () => window.closeQuickLogModal();
 const quickLogOverlay = document.getElementById('quickLogOverlay');
 if (quickLogOverlay) quickLogOverlay.onclick = (e) => { if (e.target === quickLogOverlay) window.closeQuickLogModal(); };
+
+const dayDetailClose = document.getElementById('dayDetailClose');
+if (dayDetailClose) dayDetailClose.onclick = () => window.closeDayDetailModal();
+const dayDetailOverlay = document.getElementById('dayDetailOverlay');
+if (dayDetailOverlay) dayDetailOverlay.onclick = (e) => { if (e.target === dayDetailOverlay) window.closeDayDetailModal(); };
 const quickLogSubmit = document.getElementById('quickLogSubmit');
 if (quickLogSubmit) quickLogSubmit.onclick = () => window.submitQuickLog();
 

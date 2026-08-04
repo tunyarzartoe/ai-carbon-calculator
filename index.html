@@ -127,6 +127,18 @@
             </div>
         </div>
 
+        <!-- ===== 過去の日の詳細 MODAL (カレンダーから日付タップ時) ===== -->
+        <div id="dayDetailOverlay" class="modal-overlay" aria-hidden="true">
+            <div class="modal day-detail-modal" role="dialog" aria-modal="true" aria-labelledby="dayDetailTitle">
+                <div class="modal-handle"></div>
+                <div class="modal-head">
+                    <h2 id="dayDetailTitle" class="modal-title">-</h2>
+                    <button id="dayDetailClose" class="modal-close" aria-label="閉じる" type="button">✕</button>
+                </div>
+                <div id="dayDetailBody" class="result-modal-body"></div>
+            </div>
+        </div>
+
         <!-- ===== ランキング MODAL (自己ランキング) ===== -->
         <div id="rankingOverlay" class="modal-overlay" aria-hidden="true">
             <div class="modal ranking-modal" role="dialog" aria-modal="true" aria-labelledby="rankingModalTitle">
@@ -166,29 +178,34 @@
                 <h3 class="badges-heading">獲得バッジ</h3>
                 <div id="badgesGrid" class="badges-grid"></div>
 
-                <div class="data-manage">
-                    <h3 class="data-manage-heading">📦 データ管理</h3>
-                    <p class="data-manage-note">記録はこの端末のブラウザだけに保存されているよ。機種変更やブラウザのデータ削除に備えて、バックアップを保存しておこう。</p>
-                    <div class="data-manage-actions">
-                        <button id="exportDataBtn" class="reply-btn" type="button">
-                            <span class="btn-icon">💾</span><span class="btn-text">バックアップを保存</span>
-                        </button>
-                        <button id="importDataBtn" class="reply-btn" type="button">
-                            <span class="btn-icon">📂</span><span class="btn-text">復元する</span>
-                        </button>
-                    </div>
-                    <input type="file" id="importFileInput" accept="application/json" hidden>
-                </div>
+                <details class="settings-accordion">
+                    <summary class="settings-accordion-summary">⚙️ 設定・データ管理</summary>
+                    <div class="settings-accordion-body">
+                        <div class="data-manage">
+                            <h3 class="data-manage-heading">📦 データ管理</h3>
+                            <p class="data-manage-note">記録はこの端末のブラウザだけに保存されているよ。機種変更やブラウザのデータ削除に備えて、バックアップを保存しておこう。</p>
+                            <div class="data-manage-actions">
+                                <button id="exportDataBtn" class="reply-btn" type="button">
+                                    <span class="btn-icon">💾</span><span class="btn-text">バックアップを保存</span>
+                                </button>
+                                <button id="importDataBtn" class="reply-btn" type="button">
+                                    <span class="btn-icon">📂</span><span class="btn-text">復元する</span>
+                                </button>
+                            </div>
+                            <input type="file" id="importFileInput" accept="application/json" hidden>
+                        </div>
 
-                <div class="data-manage">
-                    <h3 class="data-manage-heading">📍 通学・通勤距離</h3>
-                    <p class="data-manage-note" id="commuteStatusNote"></p>
-                    <div class="data-manage-actions">
-                        <button id="resetCommuteBtn" class="reply-btn" type="button">
-                            <span class="btn-icon">📍</span><span class="btn-text">距離をリセット</span>
-                        </button>
+                        <div class="data-manage">
+                            <h3 class="data-manage-heading">📍 通学・通勤距離</h3>
+                            <p class="data-manage-note" id="commuteStatusNote"></p>
+                            <div class="data-manage-actions">
+                                <button id="resetCommuteBtn" class="reply-btn" type="button">
+                                    <span class="btn-icon">📍</span><span class="btn-text">距離をリセット</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </details>
             </div>
         </div>
 

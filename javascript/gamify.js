@@ -264,10 +264,10 @@ window.renderAchievements = function(){
           <div class="cert-hologram"></div>
           <div class="cert-seal">
             <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
-              <circle cx="50" cy="50" r="46" fill="none" stroke="var(--cert-c2)" stroke-width="1.5" opacity="0.55"></circle>
-              <circle cx="50" cy="50" r="38" fill="none" stroke="var(--cert-c1)" stroke-width="1" stroke-dasharray="3 4" opacity="0.6"></circle>
-              <path d="M50 20 C62 28 62 46 50 54 C38 46 38 28 50 20 Z" fill="var(--cert-c1)"></path>
-              <polygon points="50,82 58,54 50,54 42,54" fill="var(--cert-c2)" opacity="0.75"></polygon>
+              <circle cx="50" cy="50" r="46" fill="none" stroke="var(--cyan)" stroke-width="1.5" opacity="0.55"></circle>
+              <circle cx="50" cy="50" r="38" fill="none" stroke="var(--mint)" stroke-width="1" stroke-dasharray="3 4" opacity="0.6"></circle>
+              <path d="M50 20 C62 28 62 46 50 54 C38 46 38 28 50 20 Z" fill="var(--mint)"></path>
+              <polygon points="50,82 58,54 50,54 42,54" fill="var(--cyan)" opacity="0.75"></polygon>
               <circle cx="50" cy="54" r="5" fill="var(--bg-panel-2)" stroke="var(--text-hi)" stroke-width="1.4"></circle>
             </svg>
           </div>
