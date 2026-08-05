@@ -160,52 +160,61 @@
                     <h2 id="achievementsModalTitle" class="modal-title">🎓 認定証・バッジ</h2>
                     <button id="achievementsClose" class="modal-close" aria-label="閉じる" type="button">✕</button>
                 </div>
-                <div id="growthTreeCard" class="growth-tree-card"></div>
-                <div class="cert-name-field">
-                    <label for="certNameInput">証明書に表示するお名前（任意）</label>
-                    <input id="certNameInput" type="text" maxlength="20" placeholder="ニックネームなど">
-                </div>
-                <div id="certificateCard" class="certificate-card"></div>
-                <div id="weeklyChallengeCard" class="weekly-challenge-card"></div>
-                <div class="certificate-actions">
-                    <button id="certShareBtn" class="reply-btn" type="button">
-                        <span class="btn-icon">📤</span><span class="btn-text">シェア</span>
-                    </button>
-                    <button id="certDownloadBtn" class="reply-btn" type="button">
-                        <span class="btn-icon">⬇️</span><span class="btn-text">画像を保存</span>
-                    </button>
-                </div>
-                <h3 class="badges-heading">獲得バッジ</h3>
-                <div id="badgesGrid" class="badges-grid"></div>
 
-                <details class="settings-accordion">
-                    <summary class="settings-accordion-summary">⚙️ 設定・データ管理</summary>
-                    <div class="settings-accordion-body">
-                        <div class="data-manage">
-                            <h3 class="data-manage-heading">📦 データ管理</h3>
-                            <p class="data-manage-note">記録はこの端末のブラウザだけに保存されているよ。機種変更やブラウザのデータ削除に備えて、バックアップを保存しておこう。</p>
-                            <div class="data-manage-actions">
-                                <button id="exportDataBtn" class="reply-btn" type="button">
-                                    <span class="btn-icon">💾</span><span class="btn-text">バックアップを保存</span>
-                                </button>
-                                <button id="importDataBtn" class="reply-btn" type="button">
-                                    <span class="btn-icon">📂</span><span class="btn-text">復元する</span>
-                                </button>
-                            </div>
-                            <input type="file" id="importFileInput" accept="application/json" hidden>
+                <div class="achievements-subtabs" role="tablist">
+                    <button type="button" class="subtab-btn active" id="achSubtabCert" data-panel="achPanelCert">証明書</button>
+                    <button type="button" class="subtab-btn" id="achSubtabBadges" data-panel="achPanelBadges">バッジ</button>
+                    <button type="button" class="subtab-btn" id="achSubtabSettings" data-panel="achPanelSettings">設定</button>
+                </div>
+
+                <div id="achPanelCert" class="achievements-panel active">
+                    <div id="growthTreeCard" class="growth-tree-card"></div>
+                    <div class="cert-name-field">
+                        <label for="certNameInput">証明書に表示するお名前（任意）</label>
+                        <input id="certNameInput" type="text" maxlength="20" placeholder="ニックネームなど">
+                    </div>
+                    <div id="certificateCard" class="certificate-card"></div>
+                    <div class="certificate-actions">
+                        <button id="certShareBtn" class="reply-btn" type="button">
+                            <span class="btn-icon">📤</span><span class="btn-text">シェア</span>
+                        </button>
+                        <button id="certDownloadBtn" class="reply-btn" type="button">
+                            <span class="btn-icon">⬇️</span><span class="btn-text">画像を保存</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="achPanelBadges" class="achievements-panel">
+                    <div id="weeklyChallengeCard" class="weekly-challenge-card"></div>
+                    <h3 class="badges-heading">獲得バッジ</h3>
+                    <div id="badgesGrid" class="badges-grid"></div>
+                </div>
+
+                <div id="achPanelSettings" class="achievements-panel">
+                    <div class="data-manage">
+                        <h3 class="data-manage-heading">📦 データ管理</h3>
+                        <p class="data-manage-note">記録はこの端末のブラウザだけに保存されているよ。機種変更やブラウザのデータ削除に備えて、バックアップを保存しておこう。</p>
+                        <div class="data-manage-actions">
+                            <button id="exportDataBtn" class="reply-btn" type="button">
+                                <span class="btn-icon">💾</span><span class="btn-text">バックアップを保存</span>
+                            </button>
+                            <button id="importDataBtn" class="reply-btn" type="button">
+                                <span class="btn-icon">📂</span><span class="btn-text">復元する</span>
+                            </button>
                         </div>
+                        <input type="file" id="importFileInput" accept="application/json" hidden>
+                    </div>
 
-                        <div class="data-manage">
-                            <h3 class="data-manage-heading">📍 通学・通勤距離</h3>
-                            <p class="data-manage-note" id="commuteStatusNote"></p>
-                            <div class="data-manage-actions">
-                                <button id="resetCommuteBtn" class="reply-btn" type="button">
-                                    <span class="btn-icon">📍</span><span class="btn-text">距離をリセット</span>
-                                </button>
-                            </div>
+                    <div class="data-manage">
+                        <h3 class="data-manage-heading">📍 通学・通勤距離</h3>
+                        <p class="data-manage-note" id="commuteStatusNote"></p>
+                        <div class="data-manage-actions">
+                            <button id="resetCommuteBtn" class="reply-btn" type="button">
+                                <span class="btn-icon">📍</span><span class="btn-text">距離をリセット</span>
+                            </button>
                         </div>
                     </div>
-                </details>
+                </div>
             </div>
         </div>
 

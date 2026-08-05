@@ -39,6 +39,13 @@ if (rankingOverlay) rankingOverlay.onclick = (e) => { if (e.target === rankingOv
 const navAchievementsBtn = document.getElementById('navAchievements');
 if (navAchievementsBtn) navAchievementsBtn.onclick = () => window.openAchievementsModal();
 
+const achSubtabCert = document.getElementById('achSubtabCert');
+if (achSubtabCert) achSubtabCert.onclick = () => window.switchAchievementsTab('achPanelCert');
+const achSubtabBadges = document.getElementById('achSubtabBadges');
+if (achSubtabBadges) achSubtabBadges.onclick = () => window.switchAchievementsTab('achPanelBadges');
+const achSubtabSettings = document.getElementById('achSubtabSettings');
+if (achSubtabSettings) achSubtabSettings.onclick = () => window.switchAchievementsTab('achPanelSettings');
+
 const achievementsClose = document.getElementById('achievementsClose');
 if (achievementsClose) achievementsClose.onclick = () => window.closeAchievementsModal();
 const achievementsOverlay = document.getElementById('achievementsOverlay');

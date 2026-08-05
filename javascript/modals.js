@@ -1,3 +1,9 @@
+function switchAchievementsTab(panelId){
+  document.querySelectorAll('.achievements-panel').forEach(p => p.classList.toggle('active', p.id === panelId));
+  document.querySelectorAll('.subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.panel === panelId));
+}
+window.switchAchievementsTab = switchAchievementsTab;
+
 function closeAllModals(){
   closeResultModal();
   closeCalendarModal();
@@ -216,6 +222,7 @@ function openAchievementsModal(){
   if (!overlay) return;
   window.renderAchievements();
   if (window.renderCommuteStatus) window.renderCommuteStatus();
+  switchAchievementsTab('achPanelCert');
   overlay.classList.add('open');
   overlay.setAttribute('aria-hidden', 'false');
   setTab('navAchievements');

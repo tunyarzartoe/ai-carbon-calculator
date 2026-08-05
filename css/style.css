@@ -1429,3 +1429,33 @@ body{
   font-size: 13.5px;
   color: var(--text-hi);
 }
+/* ==========================================================
+   認定証・バッジ モーダル — サブタブ (証明書 / バッジ / 設定)
+   ========================================================== */
+.achievements-subtabs{
+  display: flex;
+  gap: 6px;
+  padding: 4px 4px 12px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 14px;
+}
+.subtab-btn{
+  flex: 1;
+  padding: 8px 6px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease, border-color .2s ease;
+}
+.subtab-btn.active{
+  color: var(--mint);
+  background: rgba(61,255,176,.1);
+  border-color: rgba(61,255,176,.35);
+}
+.achievements-panel{ display: none; }
+.achievements-panel.active{ display: block; }
