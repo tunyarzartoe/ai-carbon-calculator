@@ -521,25 +521,40 @@ window.updateLevelBadge = function(){
    ========================================================= */
 window.renderRanking = function(){
   const list = document.getElementById('rankingList');
-  if (!list) return;
+  if (!list){
+    console.error('renderRanking: rankingList element not found');
+    return;
+  }
+  
   const history = window.loadHistory();
+  if (!Array.isArray(history)){
+    console.error('renderRanking: history is not an array', history);
+    list.innerHTML = '<p class="ranking-empty">エラーが発生しました。ページをリロードしてください。</p>';
+    return;
+  }
 
   if (history.length === 0){
     list.innerHTML = '<p class="ranking-empty">まだ記録がないよ。診断すると自動でランキングに載るよ🏆</p>';
     return;
   }
 
-  const sorted = [...history].sort((a, b) => a.total - b.total);
-  const today = window.todayStr();
-  const medals = ['①', '②', '③'];
+  try {
+    const sorted = [...history].sort((a, b) => {
+      const aTotal = typeof a.total === 'number' ? a.total : 0;
+      const bTotal = typeof b.total === 'number' ? b.total : 0;
+      return aTotal - bTotal;
+    });
+    const today = window.todayStr();
+    const medals = ['①', '②', '③'];
 
-  list.innerHTML = sorted.slice(0, 10).map((h, i) => {
-    const isToday = h.date === today;
-    return `
-      <div class="ranking-row ${isToday ? 'today' : ''}">
-        <span class="ranking-rank">${medals[i] || (i + 1)}</span>
-        <span class="ranking-date">${h.date}${isToday ? '<span class="you-tag">YOU</span>' : ''}</span>
-        <span class="ranking-value">${h.total.toFixed(1)}kg</span>
-      </div>`;
-  }).join('');
+    list.innerHTML = sorted.slice(0, 10).map((h, i) => {
+      const isToday = h.date === today;
+      const rank = medals[i] !== undefined ? medals[i] : (i + 1);
+      const total = typeof h.total === 'number' ? h.total.toFixed(1) : '0.0';
+      return `<div class="ranking-row ${isToday ? 'today' : ''}"><span class="ranking-rank">${rank}</span><span class="ranking-date">${h.date}${isToday ? '<span class="you-tag">YOU</span>' : ''}</span><span class="ranking-value">${total}kg</span></div>`;
+    }).join('');
+  } catch (e){
+    console.error('renderRanking: rendering failed', e);
+    list.innerHTML = '<p class="ranking-empty">ランキングの表示に失敗しました。</p>';
+  }
 };

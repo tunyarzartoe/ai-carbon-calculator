@@ -201,8 +201,15 @@ function moveCalendarMonth(offset){
 function openRankingModal(){
   closeAllModals();
   const overlay = document.getElementById('rankingOverlay');
-  if (!overlay) return;
-  window.renderRanking();
+  if (!overlay){
+    console.error('openRankingModal: rankingOverlay element not found');
+    return;
+  }
+  try {
+    if (window.renderRanking) window.renderRanking();
+  } catch (e){
+    console.error('openRankingModal: renderRanking failed', e);
+  }
   overlay.classList.add('open');
   overlay.setAttribute('aria-hidden', 'false');
   setTab('navRanking');
