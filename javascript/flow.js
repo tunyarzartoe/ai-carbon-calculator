@@ -13,23 +13,34 @@ window.steps = [
       if (history.length === 0){
         return [
           'こんにちは。私は CO2 Compass、きみの1日の生活からおおよそのCO2排出量を推定するAIだよ🌱',
-          '4つの質問に答えるだけ。正確な数値じゃなく「だいたいの目安」として見てね。さっそく始めよう。'
+          'まずは4つの質問に答えて、自分の生活のベースラインを知るところから始めよう。'
         ];
       }
 
       const streak = window.computeStreak(history);
       const streakLine = streak >= 2
-        ? `おかえり！${streak}日連続で診断できてるね🔥 この調子でいこう。`
-        : 'おかえり！今日も一緒に診断していこう。';
+        ? `おかえり！${streak}日連続で記録できてるね🔥 この調子でいこう。`
+        : 'おかえり！今日も記録していこう。';
       const weeklyLine = weeklyCleared
         ? `${weekly.icon} 今週のチャレンジ「${weekly.text}」はもうクリア済みだよ✅`
         : `${weekly.icon} 今週のチャレンジ: ${weekly.text}`;
       return [streakLine, weeklyLine];
     },
-    options: [
-      { label: 'はじめる', icon: '✨', next: 'goal' },
-      { label: '10秒で記録', icon: '⚡', quickLog: true }
-    ]
+    options: function(){
+      const history = window.loadHistory();
+      if (history.length === 0){
+        // 初回はアプリの仕組みを理解してもらうため、じっくり診断を主役にする
+        return [
+          { label: 'はじめる（4問で診断）', icon: '✨', next: 'goal' },
+          { label: '10秒で記録', icon: '⚡', quickLog: true }
+        ];
+      }
+      // 2回目以降は毎日の摩擦を減らすため、10秒記録を主役にする
+      return [
+        { label: '今日を記録する', icon: '⚡', quickLog: true },
+        { label: 'じっくり診断する（4問）', icon: '📝', next: 'goal' }
+      ];
+    }
   },
   {
     id: 'goal',
@@ -112,39 +123,13 @@ window.steps = [
       label: v.label,
       icon: key === 'always' ? '♻️' : key === 'sometimes' ? '🗑️' : '🚯',
       value: key,
-      next: 'quiz'
+      next: 'result'
     })),
     onAnswer: function(val){
       const kg = +window.WASTE[val].kg.toFixed(2);
       window.addResult('waste', kg, `ゴミ分別: ${window.WASTE[val].label} → 約 ${kg}kg`);
     }
-  },
-  // {
-  //   id: 'quiz',
-  //   ai: function(){
-  //     const breakdown = window.state.breakdown;
-  //     const preferredCategory = Object.keys(breakdown).sort((a, b) => breakdown[b] - breakdown[a])[0];
-  //     window.currentQuiz = window.pickRandomQuiz(preferredCategory);
-  //     return [`ちょっと一息、クイズです🧠<br>${window.currentQuiz.q}`];
-  //   },
-  //   options: [], // populated dynamically in goToStep for this step
-  //   onAnswer: function(){} // handled specially in selectQuizAnswer
-  // }
-  {
-  id: 'quiz',
-  ai: function(){
-    const breakdown = window.state.breakdown;
-    const preferredCategory = Object.keys(breakdown).sort((a, b) => breakdown[b] - breakdown[a])[0];
-    window.currentInsight = window.pickInsight(preferredCategory);
-    const insight = window.currentInsight;
-    const tag = insight.kind === 'news'
-      ? `📰 ${insight.date}・${insight.source}より`
-      : '💡 豆知識';
-    return [`ちょっと一息🌍<br>${tag}`, `<strong>${insight.title}</strong><br>${insight.body}`];
-  },
-  options: [],
-  onAnswer: function(){}
-}
+  }
 ];
 
 function goToStep(stepId){
@@ -168,20 +153,13 @@ function goToStep(stepId){
   //   window.aiSpeak(lines, () => window.renderOptions(quizOptions, selectOption));
   //   return;
   // }
-  if (stepId === 'quiz'){
-    const aiOutput = typeof step.ai === 'function' ? step.ai() : step.ai;
-    const lines = Array.isArray(aiOutput) ? [window.randomAck(), ...aiOutput] : [window.randomAck(), String(aiOutput)];
-    window.aiSpeak(lines, () => window.renderOptions([
-      { label: '次へ', icon: '➡️', next: 'result' }
-    ], selectOption));
-    return;
-  }
 
   const aiOutput = typeof step.ai === 'function' ? step.ai() : step.ai;
   const lines = Array.isArray(aiOutput)
     ? (stepId === 'intro' ? aiOutput : [window.randomAck(), ...aiOutput])
     : (stepId === 'intro' ? [String(aiOutput)] : [window.randomAck(), String(aiOutput)]);
-  window.aiSpeak(lines, () => window.renderOptions(step.options, selectOption));
+  const options = typeof step.options === 'function' ? step.options() : step.options;
+  window.aiSpeak(lines, () => window.renderOptions(options, selectOption));
 }
 
 function selectOption(opt){
@@ -222,7 +200,7 @@ function selectOption(opt){
   window.addBubble(opt.label, 'user');
 
   if (opt.value !== undefined){
-    const currentStep = window.steps.find(s => s.id === window.currentStepId) || window.steps.find(s => s.options.some(o => o === opt));
+    const currentStep = window.steps.find(s => s.id === window.currentStepId) || window.steps.find(s => Array.isArray(s.options) && s.options.some(o => o === opt));
     if (currentStep && currentStep.onAnswer) currentStep.onAnswer(opt.value);
 
     // 通学・通勤距離が登録済みなら distance ステップを自動スキップする
@@ -256,8 +234,15 @@ function showResult(){
   const message = window.state.total === 0
     ? '今日の行動はとてもエコです！この調子で続けましょう🌿'
     : msg;
-  const tipCategory = Object.keys(window.state.breakdown).sort((a, b) => window.state.breakdown[b] - window.state.breakdown[a])[0];
-  const tipText = window.TIPS[tipCategory];
+  const preferredCategory = Object.keys(window.state.breakdown).sort((a, b) => window.state.breakdown[b] - window.state.breakdown[a])[0];
+  const insight = window.pickInsight ? window.pickInsight(preferredCategory) : null;
+  const insightHtml = insight
+    ? `<div class="insight-mini-card">
+        <span class="insight-mini-tag">💡 豆知識</span>
+        <p class="insight-mini-title">${insight.title}</p>
+        <p class="insight-mini-body">${insight.body}</p>
+      </div>`
+    : '';
 
   const updatedHistory = window.saveHistoryEntry({
     date: window.todayStr(),
@@ -312,7 +297,7 @@ function showResult(){
 
   const body = document.getElementById('resultModalBody');
   if (body){
-    body.innerHTML = `\n      <div class="rank ${cls}">${grade}<span class="rank-label">ランク</span></div>\n      <p class="result-summary">本日の推定排出量: <strong>${window.state.total.toFixed(1)} kg CO2</strong></p>\n      <div class="result-breakdown">${chart}</div>\n      ${window.goalMessageHtml(window.state.goal, window.state.total)}\n      ${window.historyCompareHtml(updatedHistory, window.state.total)}\n      ${window.co2EquivalentHtml(window.state.total)}\n      ${window.co2ToYenHtml(window.state.breakdown)}\n      ${window.quickLogSummaryHtml ? window.quickLogSummaryHtml() : ''}\n      ${window.monthlyGoalResultHtml ? window.monthlyGoalResultHtml() : ''}\n      <p class="result-message">${message}</p>\n      <p class="result-tip">${tipText}</p>\n      <div id="weatherTipSlot"></div>\n      <div class="xp-block">\n        <div class="xp-row"><span class="xp-label">Lv.${xpResult.level}</span><span class="xp-gain">+${xpResult.gained}XP</span></div>\n        <div class="xp-track"><div class="xp-fill" style="width:${(xpResult.xpIntoLevel / xpResult.xpPerLevel) * 100}%"></div></div>\n      </div>\n      ${streakBadgeHtml}\n      <div class="result-modal-actions">\n        <button id="resultAchievementsBtn" class="reply-btn" type="button">\n          <span class="btn-icon">🎓</span><span class="btn-text">認定証を見る</span>\n        </button>\n        <button id="resultRestartBtn" class="reply-btn restart" type="button">\n          <span class="btn-icon">↻</span><span class="btn-text">もう一度診断する</span>\n        </button>\n      </div>\n    `;
+    body.innerHTML = `\n      <div class="rank ${cls}">${grade}<span class="rank-label">ランク</span></div>\n      <p class="result-summary">本日の推定排出量: <strong>${window.state.total.toFixed(1)} kg CO2</strong></p>\n      <div class="result-breakdown">${chart}</div>\n      ${window.weeklyTrendHtml ? window.weeklyTrendHtml(updatedHistory) : ''}\n      ${window.goalMessageHtml(window.state.goal, window.state.total)}\n      ${window.co2EquivalentHtml(window.state.total)}\n      ${window.co2ToYenHtml(window.state.breakdown)}\n      ${window.quickLogSummaryHtml ? window.quickLogSummaryHtml() : ''}\n      ${window.monthlyGoalResultHtml ? window.monthlyGoalResultHtml() : ''}\n      <p class="result-message">${message}</p>\n      ${insightHtml}\n      <div id="weatherTipSlot"></div>\n      <div class="xp-block">\n        <div class="xp-row"><span class="xp-label">Lv.${xpResult.level}</span><span class="xp-gain">+${xpResult.gained}XP</span></div>\n        <div class="xp-track"><div class="xp-fill" style="width:${(xpResult.xpIntoLevel / xpResult.xpPerLevel) * 100}%"></div></div>\n      </div>\n      ${streakBadgeHtml}\n      <div class="result-modal-actions">\n        <button id="resultAchievementsBtn" class="reply-btn" type="button">\n          <span class="btn-icon">🎓</span><span class="btn-text">認定証を見る</span>\n        </button>\n        <button id="resultRestartBtn" class="reply-btn restart" type="button">\n          <span class="btn-icon">↻</span><span class="btn-text">もう一度診断する</span>\n        </button>\n      </div>\n    `;
     const restartBtn = document.getElementById('resultRestartBtn');
     if (restartBtn) restartBtn.onclick = () => { window.closeResultModal(); restart(); };
 

@@ -1459,3 +1459,67 @@ body{
 }
 .achievements-panel{ display: none; }
 .achievements-panel.active{ display: block; }
+
+/* ==========================================================
+   診断結果モーダル用 — 豆知識ミニカード（旧クイズ機能の後継）
+   ========================================================== */
+.insight-mini-card{
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+}
+.insight-mini-tag{
+  display: inline-block;
+  margin-bottom: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--cyan);
+  background: rgba(51,199,232,.12);
+}
+.insight-mini-title{
+  margin: 0 0 3px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-hi);
+}
+.insight-mini-body{
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+
+/* ==========================================================
+   診断結果モーダル — 直近7日間トレンド
+   .trend-bar / .trend-bar-fill / .rank-X（カレンダー由来）と
+   .month-compare（月次比較由来）をそのまま再利用しているため、
+   ここではコンテナのレイアウトだけ追加する。
+   ========================================================== */
+.weekly-trend-card{
+  margin: 0 0 14px;
+  padding: 12px 12px 10px;
+  border-radius: 10px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+}
+.weekly-trend-heading{
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-hi);
+}
+.weekly-trend-bars{
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 44px;
+  margin-bottom: 4px;
+}
+.weekly-trend-bars .trend-bar{
+  flex: 1;
+  height: 100%;
+}
