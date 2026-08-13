@@ -491,12 +491,21 @@ body{
 .modal-overlay.open .modal{ transform: translateY(0); opacity: 1; }
 
 .modal-handle{
-  display: block;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-panel);
+}
+.modal-handle::after{
+  content: '';
   width: 34px;
   height: 4px;
   border-radius: 999px;
   background: var(--border);
-  margin: 10px auto 4px;
 }
 
 .modal-head{
@@ -508,7 +517,7 @@ body{
   border-bottom: 1px solid var(--border);
   background: var(--bg-panel);
   position: sticky;
-  top: 0;
+  top: 18px;
   z-index: 2;
 }
 .modal-title{
