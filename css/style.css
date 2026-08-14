@@ -465,59 +465,48 @@ body{
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
+  justify-content: center;
   background: rgba(6, 10, 9, .6);
   opacity: 0;
   pointer-events: none;
   transition: opacity .22s ease;
   z-index: 50;
+  padding: 24px 14px;
+  box-sizing: border-box;
 }
 .modal-overlay.open{ opacity: 1; pointer-events: auto; }
 
 .modal{
   width: 100%;
-  max-height: 88%;
+  max-width: 420px;
+  max-height: 84vh;
   overflow-y: auto;
   background: var(--bg-panel);
   border: 1px solid var(--border);
-  border-bottom: none;
-  border-radius: 18px 18px 0 0;
-  padding: 0 0 24px;
-  box-shadow: 0 -6px 28px rgba(0,0,0,.35);
-  transform: translateY(24px);
-  transition: transform .28s cubic-bezier(.4,0,.2,1), opacity .28s ease;
+  border-top: 2px solid var(--mint);
+  border-radius: 18px;
+  padding: 0 0 calc(24px + env(safe-area-inset-bottom));
+  box-shadow: 0 20px 50px rgba(0,0,0,.45);
+  transform: scale(.97);
+  transition: transform .22s ease, opacity .22s ease;
   opacity: 0;
 }
-.modal-overlay.open .modal{ transform: translateY(0); opacity: 1; }
+.modal-overlay.open .modal{ transform: scale(1); opacity: 1; }
 
-.modal-handle{
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-panel);
-}
-.modal-handle::after{
-  content: '';
-  width: 34px;
-  height: 4px;
-  border-radius: 999px;
-  background: var(--border);
-}
+.modal-handle{ display: none; }
+.modal-handle::after{ content: none; }
 
 .modal-head{
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 18px 14px;
+  gap: 10px;
+  padding: 14px 20px 16px;
   margin: 0 0 6px;
   border-bottom: 1px solid var(--border);
   background: var(--bg-panel);
   position: sticky;
-  top: 18px;
+  top: 0;
   z-index: 2;
 }
 .modal-title{
@@ -525,42 +514,46 @@ body{
   text-align: left;
   margin: 0;
   font-family: var(--font-body);
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -.01em;
+  line-height: 1.3;
   color: var(--text-hi);
 }
 .cal-nav{
-  width: 30px; height: 30px;
+  width: 36px; height: 36px;
   border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--bg-panel-2);
   color: var(--text-hi);
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1;
   cursor: pointer;
-  transition: background .15s ease, border-color .15s ease;
+  transition: background .15s ease, border-color .15s ease, transform .1s ease;
 }
 .cal-nav:hover{ border-color: var(--mint); }
+.cal-nav:active{ transform: scale(.9); }
 
 /* シンプルな丸アイコンボタン（グロー・テキストラベル無し、機能に忠実） */
 .modal-close{
   order: 1;
-  width: 32px; height: 32px;
+  width: 40px; height: 40px;
   border-radius: 50%;
   border: 1px solid var(--border);
   background: var(--bg-panel-2);
   color: var(--text-dim);
-  font-size: 13px;
+  font-size: 15px;
   cursor: pointer;
   margin-left: auto;
   flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background .15s ease, border-color .15s ease, color .15s ease;
+  transition: background .15s ease, border-color .15s ease, color .15s ease, transform .1s ease;
 }
-.modal-close::before{ content: none; }
 .modal-close:hover{ color: var(--text-hi); border-color: var(--mint); }
+.modal-close:active{ transform: scale(.9); }
+.modal-close::before{ content: none; }
 
 /* シンプルなタブ切り替え（証明書 / バッジ / 設定） */
 .achievements-subtabs{
@@ -1577,4 +1570,13 @@ body{
 .weekly-trend-bars .trend-bar{
   flex: 1;
   height: 100%;
+}
+/* 認定証セクションのタブ（証明書/バッジ/設定）を、
+   ヘッダー（.modal-handle + .modal-head）のすぐ下でスティッキーにする。
+   長いコンテンツをスクロールしても、タブが常に手の届く位置に残る。 */
+.achievements-subtabs{
+  position: sticky;
+  top: 70px; /* .modal-head（40pxの閉じるボタン + 上下padding ≈70px）の直下 */
+  z-index: 1;
+  background: var(--bg-panel);
 }
