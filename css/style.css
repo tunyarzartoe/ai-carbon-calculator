@@ -1571,9 +1571,6 @@ body{
   flex: 1;
   height: 100%;
 }
-/* 認定証セクションのタブ（証明書/バッジ/設定）を、
-   ヘッダー（.modal-handle + .modal-head）のすぐ下でスティッキーにする。
-   長いコンテンツをスクロールしても、タブが常に手の届く位置に残る。 */
 .achievements-subtabs{
   position: sticky;
   top: 70px; /* .modal-head（40pxの閉じるボタン + 上下padding ≈70px）の直下 */
