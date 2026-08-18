@@ -1571,9 +1571,50 @@ body{
   flex: 1;
   height: 100%;
 }
+/* 認定証セクションのタブ（証明書/バッジ/設定）を、
+   ヘッダー（.modal-handle + .modal-head）のすぐ下でスティッキーにする。
+   長いコンテンツをスクロールしても、タブが常に手の届く位置に残る。 */
 .achievements-subtabs{
-  position: sticky;
-  top: 70px; /* .modal-head（40pxの閉じるボタン + 上下padding ≈70px）の直下 */
-  z-index: 1;
-  background: var(--bg-panel);
+  position: static;
+  margin-top: 0;
 }
+/* ==========================================================
+   チャット内蔵カード（モーダル廃止版）
+   診断結果・カレンダー・ランキング・認定証・クイック記録は
+   すべて #chatLog の中の「AIが送ったカード」として表示される。
+   ========================================================== */
+.chat-card{
+  align-self: stretch;
+  border-radius: var(--radius);
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+  animation: rise .3s ease both;
+}
+
+.chat-card-head{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-hi);
+}
+.chat-card-title{
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-hi);
+}
+
+.chat-card-body{
+  padding: 16px;
+}
+
+/* カレンダーカードの月送りボタンは chat-card-head の両端に配置 */
+#calendarCard .chat-card-head{ justify-content: space-between; }
