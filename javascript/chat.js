@@ -10,6 +10,9 @@ function scrollToBottom(){
 }
 
 function addBubble(text, cls){
+  const row = document.createElement('div');
+  row.className = `bubble-row ${cls}`;
+
   const div = document.createElement('div');
   div.className = `bubble ${cls}`;
   if (cls === 'ai'){
@@ -17,9 +20,19 @@ function addBubble(text, cls){
   } else {
     div.textContent = text;
   }
-  chatLog.appendChild(div);
+
+  const time = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+  const meta = document.createElement('div');
+  meta.className = 'bubble-meta';
+  meta.innerHTML = cls === 'user'
+    ? `<span class="bubble-read">既読</span><span class="bubble-time">${time}</span>`
+    : `<span class="bubble-time">${time}</span>`;
+
+  row.appendChild(div);
+  row.appendChild(meta);
+  chatLog.appendChild(row);
   requestAnimationFrame(() => {
-    div.scrollIntoView({ block: 'end', inline: 'nearest' });
+    row.scrollIntoView({ block: 'end', inline: 'nearest' });
     scrollToBottom();
   });
 }

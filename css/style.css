@@ -65,10 +65,10 @@ body{
   justify-content: space-between;
   gap: 12px;
   min-width: 0;
-  padding: 16px 18px;
-  background: linear-gradient(180deg, var(--bg-panel) 0%, var(--bg-panel) 60%, var(--bg-panel-2) 100%);
-  border-bottom: 1px solid var(--border);
-  box-shadow: 0 6px 16px -8px rgba(0,0,0,.45);
+  padding: 14px 16px;
+  background: var(--mint);
+  border-bottom: none;
+  box-shadow: 0 2px 8px -2px rgba(0,0,0,.35);
   position: relative;
   z-index: 5;
 }
@@ -239,28 +239,60 @@ body{
   padding: 18px 16px 8px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(61,255,176,.03) 0, transparent 45%),
+    radial-gradient(circle at 80% 60%, rgba(51,199,232,.03) 0, transparent 45%),
+    repeating-linear-gradient(45deg, rgba(255,255,255,.012) 0 2px, transparent 2px 26px),
+    repeating-linear-gradient(-45deg, rgba(255,255,255,.012) 0 2px, transparent 2px 26px);
+}
+
+.bubble-row{
+  display: flex;
+  align-items: flex-end;
+  gap: 5px;
+  max-width: 82%;
+}
+.bubble-row.ai{ align-self: flex-start; }
+.bubble-row.user{ align-self: flex-end; flex-direction: row-reverse; }
+
+.bubble-meta{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+  padding-bottom: 2px;
+}
+.bubble-row.ai .bubble-meta{ align-items: flex-start; }
+.bubble-time{
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.bubble-read{
+  font-size: 9.5px;
+  color: var(--mint);
+  white-space: nowrap;
 }
 
 .bubble{
-  max-width: 82%;
-  padding: 11px 14px;
-  border-radius: var(--radius);
+  max-width: 100%;
+  padding: 9px 14px;
+  border-radius: 10px;
   font-size: 14.5px;
-  line-height: 1.55;
-  animation: rise .35s ease both;
+  line-height: 1.45;
+  animation: rise .3s ease both;
 }
 @keyframes rise{
-  from{ opacity: 0; transform: translateY(8px); }
+  from{ opacity: 0; transform: translateY(6px); }
   to{ opacity: 1; transform: translateY(0); }
 }
 
 .bubble.ai{
-  align-self: flex-start;
   background: var(--bg-panel-2);
-  border: 1px solid var(--border);
-  border-bottom-left-radius: 4px;
   color: var(--text-hi);
+  border-radius: 3px 14px 14px 14px;
 }
 .bubble.ai .ai-tag{
   display: block;
@@ -268,15 +300,14 @@ body{
   font-size: 9px;
   letter-spacing: .14em;
   color: var(--mint);
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .bubble.user{
-  align-self: flex-end;
-  background: linear-gradient(135deg, var(--cyan), var(--mint));
+  background: var(--mint);
   color: #06110D;
-  font-weight: 600;
-  border-bottom-right-radius: 4px;
+  font-weight: 500;
+  border-radius: 14px 3px 14px 14px;
 }
 
 .result-modal-body .rank{
@@ -1618,3 +1649,24 @@ body{
 
 /* カレンダーカードの月送りボタンは chat-card-head の両端に配置 */
 #calendarCard .chat-card-head{ justify-content: space-between; }
+
+/* ヘッダーが明るいミント色の帯（WhatsApp/Telegramのコンタクトバー風）になったため、
+   その上のテキスト/バッジはコントラストが取れる濃い色に上書きする */
+.app-header .brand-title,
+.app-header #gaugeValue{
+  color: var(--bg-void);
+}
+.app-header .brand-tag,
+.app-header .gauge-unit{
+  color: rgba(10,15,13,.65);
+}
+.app-header .level-badge{
+  background: var(--bg-void);
+  color: var(--mint);
+}
+.app-header .gauge-track{
+  stroke: rgba(10,15,13,.18);
+}
+.app-header .brand-icon{
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.2));
+}
