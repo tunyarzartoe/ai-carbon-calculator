@@ -1,30 +1,41 @@
-function switchAchievementsTab(panelId){
-  document.querySelectorAll('.achievements-panel').forEach(p => p.classList.toggle('active', p.id === panelId));
-  document.querySelectorAll('.subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.panel === panelId));
-}
-window.switchAchievementsTab = switchAchievementsTab;
+/* =========================================================
+   modals.js → ハイブリッド版
+   ------------------------------------------------------------
+   ・診断結果（resultOverlay）/ 日付詳細 / クイック記録
+     → 本物のモーダル（ポップアップ）のまま
+   ・履歴・ランキング・認定証
+     → チャット画面を隠して、そのページだけを表示する
+       「本物のタブ切り替え」（Instagram等の実アプリと同じ方式）
+   ========================================================= */
 
-function closeAllModals(){
-  closeResultModal();
-  closeCalendarModal();
-  closeRankingModal();
-  closeAchievementsModal();
-  closeQuickLogModal();
-  closeDayDetailModal();
+function switchPage(pageId){
+  document.querySelectorAll('.app-page').forEach(p => p.classList.toggle('active', p.id === pageId));
 }
 
 function setTab(id){
   if (window.setActiveTab) window.setActiveTab(id);
 }
 
+function closeAllModals(){
+  closeResultModal();
+  closeDayDetailModal();
+  closeQuickLogModal();
+}
+
+/* ===== 証明書タブ切り替え（認定証ページ内） ===== */
+function switchAchievementsTab(panelId){
+  document.querySelectorAll('.achievements-panel').forEach(p => p.classList.toggle('active', p.id === panelId));
+  document.querySelectorAll('.subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.panel === panelId));
+}
+window.switchAchievementsTab = switchAchievementsTab;
+
+/* ===== 📊 診断結果（本物のモーダル） ===== */
 function openResultModal(){
-  closeAllModals();
   const overlay = document.getElementById('resultOverlay');
   if (!overlay) return;
   overlay.classList.add('open');
   overlay.setAttribute('aria-hidden', 'false');
 }
-
 function closeResultModal(){
   const overlay = document.getElementById('resultOverlay');
   if (!overlay) return;
@@ -32,24 +43,14 @@ function closeResultModal(){
   overlay.setAttribute('aria-hidden', 'true');
 }
 
+/* ===== 🗓️ 履歴・カレンダー（チャットを隠してページ切り替え） ===== */
 function openCalendarModal(){
-  closeAllModals();
-  const overlay = document.getElementById('calendarOverlay');
-  if (!overlay) return;
   window.calendarCursor = new Date();
   renderCalendar();
-  overlay.classList.add('open');
-  overlay.setAttribute('aria-hidden', 'false');
+  switchPage('historyPage');
   setTab('navHistory');
 }
-
-function closeCalendarModal(){
-  const overlay = document.getElementById('calendarOverlay');
-  if (!overlay) return;
-  overlay.classList.remove('open');
-  overlay.setAttribute('aria-hidden', 'true');
-  setTab('navChat');
-}
+function closeCalendarModal(){ switchPage('chatPage'); setTab('navChat'); }
 
 function dateKey(y, m, d){
   return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
@@ -139,8 +140,8 @@ function renderCalendar(){
   }
   grid.innerHTML = html;
 
-  grid.querySelectorAll('.cal-day.has-entry').forEach(btn => {
-    btn.onclick = () => selectCalendarDay(btn.dataset.date, byDate[btn.dataset.date]);
+  grid.querySelectorAll('.cal-day[data-date]').forEach(btn => {
+    btn.onclick = () => selectCalendarDay(btn.dataset.date, byDate[btn.dataset.date] || null);
   });
 
   if (detail) detail.innerHTML = '<p class="cd-empty">記録のある日をタップすると詳細が見られるよ📊</p>';
@@ -155,10 +156,7 @@ function selectCalendarDay(key, entry){
   openDayDetailModal(key, entry);
 }
 
-/* カレンダーで日付をタップしたときに、その日の記録を専用モーダルで
-   きちんと見せる（診断結果モーダルと同じ構成: ランク・内訳・換算・コスト）。
-   カレンダーモーダルは開いたままにして、このモーダルはその上に重ねる
-   （閉じたらカレンダーに自然に戻れるようにするため）。 */
+/* 日付詳細は本物のモーダルのまま（カレンダーページの上に重ねて出す） */
 function openDayDetailModal(key, entry){
   const overlay = document.getElementById('dayDetailOverlay');
   const titleEl = document.getElementById('dayDetailTitle');
@@ -184,7 +182,6 @@ function openDayDetailModal(key, entry){
   overlay.classList.add('open');
   overlay.setAttribute('aria-hidden', 'false');
 }
-
 function closeDayDetailModal(){
   const overlay = document.getElementById('dayDetailOverlay');
   if (!overlay) return;
@@ -198,59 +195,32 @@ function moveCalendarMonth(offset){
   renderCalendar();
 }
 
+/* ===== 🏆 自己ランキング（ページ切り替え） ===== */
 function openRankingModal(){
-  closeAllModals();
-  const overlay = document.getElementById('rankingOverlay');
-  if (!overlay){
-    console.error('openRankingModal: rankingOverlay element not found');
-    return;
-  }
-  try {
-    if (window.renderRanking) window.renderRanking();
-  } catch (e){
-    console.error('openRankingModal: renderRanking failed', e);
-  }
-  overlay.classList.add('open');
-  overlay.setAttribute('aria-hidden', 'false');
+  try { if (window.renderRanking) window.renderRanking(); }
+  catch (e){ console.error('openRankingModal: renderRanking failed', e); }
+  switchPage('rankingPage');
   setTab('navRanking');
 }
+function closeRankingModal(){ switchPage('chatPage'); setTab('navChat'); }
 
-function closeRankingModal(){
-  const overlay = document.getElementById('rankingOverlay');
-  if (!overlay) return;
-  overlay.classList.remove('open');
-  overlay.setAttribute('aria-hidden', 'true');
-  setTab('navChat');
-}
-
+/* ===== 🎓 認定証・バッジ（ページ切り替え） ===== */
 function openAchievementsModal(){
-  closeAllModals();
-  const overlay = document.getElementById('achievementsOverlay');
-  if (!overlay) return;
   window.renderAchievements();
   if (window.renderCommuteStatus) window.renderCommuteStatus();
   switchAchievementsTab('achPanelCert');
-  overlay.classList.add('open');
-  overlay.setAttribute('aria-hidden', 'false');
+  switchPage('achievementsPage');
   setTab('navAchievements');
 }
+function closeAchievementsModal(){ switchPage('chatPage'); setTab('navChat'); }
 
-function closeAchievementsModal(){
-  const overlay = document.getElementById('achievementsOverlay');
-  if (!overlay) return;
-  overlay.classList.remove('open');
-  overlay.setAttribute('aria-hidden', 'true');
-  setTab('navChat');
-}
-
+/* ===== ⚡ クイック記録（本物のモーダル） ===== */
 function openQuickLogModal(){
-  closeAllModals();
   const overlay = document.getElementById('quickLogOverlay');
   if (!overlay) return;
   overlay.classList.add('open');
   overlay.setAttribute('aria-hidden', 'false');
 }
-
 function closeQuickLogModal(){
   const overlay = document.getElementById('quickLogOverlay');
   if (!overlay) return;

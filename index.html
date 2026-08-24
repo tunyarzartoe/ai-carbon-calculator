@@ -35,10 +35,8 @@
                     <h1 class="brand-title">CO<sub>2</sub> Compass</h1>
                 </div>
             </div>
-
             <div class="header-right">
                 <span id="levelBadge" class="level-badge">Lv.1</span>
-
                 <div class="gauge-wrap" aria-label="本日の推定CO2排出量">
                     <svg class="gauge" viewBox="0 0 120 120">
                         <circle class="gauge-track" cx="60" cy="60" r="52"></circle>
@@ -52,57 +50,21 @@
             </div>
         </header>
 
-        <!-- ===== CHAT LOG ===== -->
-        <main id="chatLog" class="chat-log" aria-live="polite"></main>
+        <!-- ===== 💬 チャット PAGE（診断のQ&A。既定で表示） ===== -->
+        <div id="chatPage" class="app-page active">
+            <main id="chatLog" class="chat-log" aria-live="polite"></main>
+            <footer class="reply-dock">
+                <div id="replyOptions" class="reply-options"></div>
+            </footer>
+        </div>
 
-        <!-- ===== QUICK REPLIES ===== -->
-        <footer class="reply-dock">
-            <div id="replyOptions" class="reply-options"></div>
-        </footer>
-
-        <!-- ===== BOTTOM NAV (like a real app's tab bar) ===== -->
-        <nav class="bottom-nav" aria-label="メインナビゲーション">
-            <button class="nav-tab active" id="navChat" type="button">
-                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 12c0-4.4 3.6-8 8-8s8 3.6 8 8-3.6 8-8 8c-1.1 0-2.1-.2-3-.6L4 21l1.7-4.5C4.6 15 4 13.6 4 12z"
-                        stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
-                </svg>
-                <span>チャット</span>
-            </button>
-            <button class="nav-tab" id="navHistory" type="button">
-                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"></rect>
-                    <path d="M16 3v4M8 3v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
-                    <path d="M7 11h10M7 15h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path>
-                </svg>
-                <span>履歴</span>
-            </button>
-            <button class="nav-tab" id="navRanking" type="button">
-                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 4h8v6a4 4 0 01-8 0V4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
-                    <path d="M8 6H5a1 1 0 00-1 1v1a3 3 0 003 3M16 6h3a1 1 0 011 1v1a3 3 0 01-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
-                    <path d="M12 14v3M9 20h6M10 17h4v3h-4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
-                </svg>
-                <span>ランキング</span>
-            </button>
-            <button class="nav-tab" id="navAchievements" type="button">
-                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="12" cy="9" r="6" stroke="currentColor" stroke-width="1.6"></circle>
-                    <path d="M9 14.5L7 21l5-3 5 3-2-6.5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
-                </svg>
-                <span>認定証</span>
-            </button>
-        </nav>
-
-        <!-- ===== CALENDAR MODAL (real calendar, month view) ===== -->
-        <div id="calendarOverlay" class="modal-overlay" aria-hidden="true">
-            <div class="modal calendar-modal" role="dialog" aria-modal="true" aria-labelledby="calMonthLabel">
-                <div class="modal-handle"></div>
-                <div class="modal-head">
+        <!-- ===== 🗓️ 履歴 PAGE ===== -->
+        <div id="historyPage" class="app-page">
+            <div class="page-scroll">
+                <div class="page-head-row">
                     <button id="calPrev" class="cal-nav" aria-label="前の月" type="button">‹</button>
-                    <h2 id="calMonthLabel" class="modal-title">-</h2>
+                    <span id="calMonthLabel" class="page-head-label">-</span>
                     <button id="calNext" class="cal-nav" aria-label="次の月" type="button">›</button>
-                    <button id="calendarClose" class="modal-close" aria-label="閉じる" type="button">✕</button>
                 </div>
                 <div id="calendarSummary" class="calendar-summary"></div>
                 <div id="monthlyGoalCard" class="monthly-goal-card-wrap"></div>
@@ -115,52 +77,18 @@
             </div>
         </div>
 
-        <!-- ===== AI診断結果 MODAL ===== -->
-        <div id="resultOverlay" class="modal-overlay" aria-hidden="true">
-            <div class="modal result-modal" role="dialog" aria-modal="true" aria-labelledby="resultModalTitle">
-                <div class="modal-handle"></div>
-                <div class="modal-head">
-                    <h2 id="resultModalTitle" class="modal-title">AI 診断結果</h2>
-                    <button id="resultClose" class="modal-close" aria-label="閉じる" type="button">✕</button>
-                </div>
-                <div id="resultModalBody" class="result-modal-body"></div>
-            </div>
-        </div>
-
-        <!-- ===== 過去の日の詳細 MODAL (カレンダーから日付タップ時) ===== -->
-        <div id="dayDetailOverlay" class="modal-overlay" aria-hidden="true">
-            <div class="modal day-detail-modal" role="dialog" aria-modal="true" aria-labelledby="dayDetailTitle">
-                <div class="modal-handle"></div>
-                <div class="modal-head">
-                    <h2 id="dayDetailTitle" class="modal-title">-</h2>
-                    <button id="dayDetailClose" class="modal-close" aria-label="閉じる" type="button">✕</button>
-                </div>
-                <div id="dayDetailBody" class="result-modal-body"></div>
-            </div>
-        </div>
-
-        <!-- ===== ランキング MODAL (自己ランキング) ===== -->
-        <div id="rankingOverlay" class="modal-overlay" aria-hidden="true">
-            <div class="modal ranking-modal" role="dialog" aria-modal="true" aria-labelledby="rankingModalTitle">
-                <div class="modal-handle"></div>
-                <div class="modal-head">
-                    <h2 id="rankingModalTitle" class="modal-title">🏆 自己ランキング</h2>
-                    <button id="rankingClose" class="modal-close" aria-label="閉じる" type="button">✕</button>
-                </div>
+        <!-- ===== 🏆 ランキング PAGE ===== -->
+        <div id="rankingPage" class="app-page">
+            <div class="page-scroll">
+                <h2 class="page-title">🏆 自己ランキング</h2>
                 <p class="ranking-subtitle">CO2が少なかった日ランキング（過去の自分と比較）</p>
                 <div id="rankingList" class="ranking-list"></div>
             </div>
         </div>
 
-        <!-- ===== 認定証・バッジ MODAL ===== -->
-        <div id="achievementsOverlay" class="modal-overlay" aria-hidden="true">
-            <div class="modal achievements-modal" role="dialog" aria-modal="true" aria-labelledby="achievementsModalTitle">
-                <div class="modal-handle"></div>
-                <div class="modal-head">
-                    <h2 id="achievementsModalTitle" class="modal-title">🎓 認定証・バッジ</h2>
-                    <button id="achievementsClose" class="modal-close" aria-label="閉じる" type="button">✕</button>
-                </div>
-
+        <!-- ===== 🎓 認定証・バッジ PAGE ===== -->
+        <div id="achievementsPage" class="app-page">
+            <div class="page-scroll">
                 <div class="achievements-subtabs" role="tablist">
                     <button type="button" class="subtab-btn active" id="achSubtabCert" data-panel="achPanelCert">証明書</button>
                     <button type="button" class="subtab-btn" id="achSubtabBadges" data-panel="achPanelBadges">バッジ</button>
@@ -214,11 +142,86 @@
                             </button>
                         </div>
                     </div>
+
+                    <div class="data-manage">
+                        <h3 class="data-manage-heading">🔔 記録リマインダー</h3>
+                        <p class="data-manage-note">設定した時刻までにその日の記録がないと、アプリを開いたときにお知らせするよ。</p>
+                        <div class="reminder-setup">
+                            <input id="reminderTimeInput" type="time" value="20:00">
+                            <button id="reminderEnableBtn" class="reply-btn" type="button">
+                                <span class="btn-icon">🔔</span><span class="btn-text">リマインダーを設定</span>
+                            </button>
+                        </div>
+                        <p class="data-manage-note" id="reminderStatusNote"></p>
+                        <div class="data-manage-actions">
+                            <button id="reminderDisableBtn" class="reply-btn" type="button" hidden>
+                                <span class="btn-icon">🔕</span><span class="btn-text">オフにする</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- ===== クイック記録 MODAL (10秒モード) ===== -->
+        <!-- ===== BOTTOM NAV ===== -->
+        <nav class="bottom-nav" aria-label="メインナビゲーション">
+            <button class="nav-tab active" id="navChat" type="button">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 12c0-4.4 3.6-8 8-8s8 3.6 8 8-3.6 8-8 8c-1.1 0-2.1-.2-3-.6L4 21l1.7-4.5C4.6 15 4 13.6 4 12z"
+                        stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+                </svg>
+                <span>チャット</span>
+            </button>
+            <button class="nav-tab" id="navHistory" type="button">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"></rect>
+                    <path d="M16 3v4M8 3v4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <path d="M7 11h10M7 15h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+                <span>履歴</span>
+            </button>
+            <button class="nav-tab" id="navRanking" type="button">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 4h8v6a4 4 0 01-8 0V4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+                    <path d="M8 6H5a1 1 0 00-1 1v1a3 3 0 003 3M16 6h3a1 1 0 011 1v1a3 3 0 01-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path>
+                    <path d="M12 14v3M9 20h6M10 17h4v3h-4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+                </svg>
+                <span>ランキング</span>
+            </button>
+            <button class="nav-tab" id="navAchievements" type="button">
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="9" r="6" stroke="currentColor" stroke-width="1.6"></circle>
+                    <path d="M9 14.5L7 21l5-3 5 3-2-6.5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+                </svg>
+                <span>認定証</span>
+            </button>
+        </nav>
+
+        <!-- ===== 📊 診断結果 MODAL（Q&Aが終わったらここだけモーダルで出す） ===== -->
+        <div id="resultOverlay" class="modal-overlay" aria-hidden="true">
+            <div class="modal result-modal" role="dialog" aria-modal="true" aria-labelledby="resultModalTitle">
+                <div class="modal-handle"></div>
+                <div class="modal-head">
+                    <h2 id="resultModalTitle" class="modal-title">AI 診断結果</h2>
+                    <button id="resultClose" class="modal-close" aria-label="閉じる" type="button">✕</button>
+                </div>
+                <div id="resultModalBody" class="result-modal-body"></div>
+            </div>
+        </div>
+
+        <!-- ===== 📆 過去の日の詳細 MODAL（カレンダーから日付タップ時） ===== -->
+        <div id="dayDetailOverlay" class="modal-overlay" aria-hidden="true">
+            <div class="modal day-detail-modal" role="dialog" aria-modal="true" aria-labelledby="dayDetailTitle">
+                <div class="modal-handle"></div>
+                <div class="modal-head">
+                    <h2 id="dayDetailTitle" class="modal-title">-</h2>
+                    <button id="dayDetailClose" class="modal-close" aria-label="閉じる" type="button">✕</button>
+                </div>
+                <div id="dayDetailBody" class="result-modal-body"></div>
+            </div>
+        </div>
+
+        <!-- ===== ⚡ クイック記録 MODAL ===== -->
         <div id="quickLogOverlay" class="modal-overlay" aria-hidden="true">
             <div class="modal quicklog-modal" role="dialog" aria-modal="true" aria-labelledby="quickLogTitle">
                 <div class="modal-handle"></div>
@@ -226,7 +229,7 @@
                     <h2 id="quickLogTitle" class="modal-title">⚡ クイック記録</h2>
                     <button id="quickLogClose" class="modal-close" aria-label="閉じる" type="button">✕</button>
                 </div>
-                <p class="quicklog-note">今日やったことにチェックするだけ。約10秒で記録できるよ（チェックしなかった項目は平均的な1日として計算するよ）。</p>
+                <p class="quicklog-note">今日やったことにチェックするだけ。約10秒で記録できるよ。</p>
                 <div id="quickLogList" class="quicklog-list"></div>
                 <button id="quickLogSubmit" class="reply-btn restart" type="button">
                     <span class="btn-icon">✅</span><span class="btn-text">記録する</span>
@@ -245,6 +248,7 @@
     <script src="javascript/commute.js"></script>
     <script src="javascript/quicklog.js"></script>
     <script src="javascript/monthlygoal.js"></script>
+    <script src="javascript/reminder.js"></script>
     <script src="javascript/chat.js"></script>
     <script src="javascript/modals.js"></script>
     <script src="javascript/flow.js"></script>
