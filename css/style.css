@@ -203,8 +203,8 @@ body{
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 9px 4px 8px;
+  gap: 4px;
+  padding: 8px 4px 6px;
   border: none;
   background: transparent;
   color: var(--text-dim);
@@ -212,25 +212,30 @@ body{
   transition: color .15s ease;
   position: relative;
 }
-.nav-tab svg{ width: 20px; height: 20px; display: block; }
+.nav-tab svg{
+  width: 22px;
+  height: 22px;
+  display: block;
+  transition: transform .18s cubic-bezier(.34,1.56,.64,1), stroke-width .15s ease;
+}
 .nav-tab span{
-  font-size: 9.5px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 500;
   letter-spacing: .01em;
+  transition: font-weight .15s ease;
 }
-.nav-tab:active{ transform: scale(.95); }
+.nav-tab:active svg{ transform: scale(.88); }
 .nav-tab.active{ color: var(--mint); }
-.nav-tab.active::before{
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 28px;
-  height: 2.5px;
-  border-radius: 0 0 3px 3px;
-  background: linear-gradient(90deg, var(--mint), var(--cyan));
+.nav-tab.active svg{
+  transform: scale(1.08);
 }
+.nav-tab.active svg path,
+.nav-tab.active svg circle,
+.nav-tab.active svg rect,
+.nav-tab.active svg polygon{
+  stroke-width: 2;
+}
+.nav-tab.active span{ font-weight: 700; }
 
 /* ================= CHAT LOG ================= */
 .chat-log{
