@@ -343,6 +343,7 @@ function restart(){
 function initApp(){
   window.updateGauge();
   goToStep('intro');
+  if (window.reminder && window.reminder.checkOnOpen) window.reminder.checkOnOpen();
 }
 
 window.initApp = initApp;

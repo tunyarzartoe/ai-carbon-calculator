@@ -1,0 +1,143 @@
+/* =========================================================
+   🔔 リマインダー（実際のアプリにあるような通知設定UI）
+   既存の style.css で定義されているデザイントークン
+   （--bg-panel / --bg-panel-2 / --border / --mint / --text-hi /
+   --text-dim / --font-body / --radius）をそのまま利用する。
+   ========================================================= */
+
+.reminder-toggle-row{
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* iOS/Androidでおなじみのトグルスイッチ */
+.switch{
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  cursor: pointer;
+}
+.switch input{
+  position: absolute;
+  opacity: 0;
+  width: 1px; height: 1px;
+}
+.switch-track{
+  display: block;
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  transition: background .15s ease, border-color .15s ease;
+}
+.switch-thumb{
+  position: absolute;
+  top: 2px; left: 2px;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: transform .18s cubic-bezier(.34,1.56,.64,1), background .15s ease;
+}
+.switch input:checked + .switch-track{
+  background: var(--mint);
+  border-color: var(--mint);
+}
+.switch input:checked + .switch-track .switch-thumb{
+  transform: translateX(18px);
+  background: var(--bg-void);
+}
+.switch input:focus-visible + .switch-track{
+  box-shadow: 0 0 0 3px rgba(61,255,176,.25);
+}
+
+.reminder-settings{
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-panel-2);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: opacity .15s ease;
+}
+.reminder-settings.is-disabled{
+  opacity: .45;
+  pointer-events: none;
+}
+
+.reminder-row{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.reminder-row-days{ align-items: flex-start; }
+.reminder-row-label{
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  flex: none;
+  padding-top: 4px;
+}
+
+.reminder-time-input{
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-hi);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+}
+
+.reminder-day-chips{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  flex: 1;
+}
+.reminder-day-chip{
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.reminder-day-chip.active{
+  background: var(--mint);
+  border-color: var(--mint);
+  color: var(--bg-void);
+}
+.reminder-day-chip:not(.active):hover{ border-color: var(--text-dim); }
+
+.reminder-permission-note{
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* 端末通知の許可がない場合に出すアプリ内バナー（通常のAIバブルと同じ見た目） */
+.reminder-toast{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.reminder-toast-text{ margin: 0; }
+.reminder-toast-actions{
+  display: flex;
+  gap: 8px;
+}
+.reminder-toast-actions .reply-btn{
+  flex: 1;
+  justify-content: center;
+}

@@ -17,6 +17,7 @@
         href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/reminder.css">
 </head>
 
 <body>
@@ -144,18 +145,42 @@
                     </div>
 
                     <div class="data-manage">
-                        <h3 class="data-manage-heading">🔔 記録リマインダー</h3>
-                        <p class="data-manage-note">設定した時刻までにその日の記録がないと、アプリを開いたときにお知らせするよ。</p>
-                        <div class="reminder-setup">
-                            <input id="reminderTimeInput" type="time" value="20:00">
-                            <button id="reminderEnableBtn" class="reply-btn" type="button">
-                                <span class="btn-icon">🔔</span><span class="btn-text">リマインダーを設定</span>
-                            </button>
+                        <div class="reminder-toggle-row">
+                            <div>
+                                <h3 class="data-manage-heading">🔔 記録リマインダー</h3>
+                                <p class="data-manage-note">設定した時刻までにその日の記録がないと、通知でお知らせするよ。</p>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="reminderToggle">
+                                <span class="switch-track"><span class="switch-thumb"></span></span>
+                            </label>
                         </div>
+
+                        <div class="reminder-settings" id="reminderSettings">
+                            <div class="reminder-row">
+                                <span class="reminder-row-label">時刻</span>
+                                <input id="reminderTimeInput" type="time" value="20:00" class="reminder-time-input">
+                            </div>
+                            <div class="reminder-row reminder-row-days">
+                                <span class="reminder-row-label">曜日</span>
+                                <div class="reminder-day-chips">
+                                    <button type="button" class="reminder-day-chip" data-day="0" aria-pressed="true">日</button>
+                                    <button type="button" class="reminder-day-chip" data-day="1" aria-pressed="true">月</button>
+                                    <button type="button" class="reminder-day-chip" data-day="2" aria-pressed="true">火</button>
+                                    <button type="button" class="reminder-day-chip" data-day="3" aria-pressed="true">水</button>
+                                    <button type="button" class="reminder-day-chip" data-day="4" aria-pressed="true">木</button>
+                                    <button type="button" class="reminder-day-chip" data-day="5" aria-pressed="true">金</button>
+                                    <button type="button" class="reminder-day-chip" data-day="6" aria-pressed="true">土</button>
+                                </div>
+                            </div>
+                        </div>
+
                         <p class="data-manage-note" id="reminderStatusNote"></p>
+                        <p class="data-manage-note reminder-permission-note" id="reminderPermissionNote"></p>
+
                         <div class="data-manage-actions">
-                            <button id="reminderDisableBtn" class="reply-btn" type="button" hidden>
-                                <span class="btn-icon">🔕</span><span class="btn-text">オフにする</span>
+                            <button id="reminderTestBtn" class="reply-btn" type="button">
+                                <span class="btn-icon">🔔</span><span class="btn-text">テスト通知を送る</span>
                             </button>
                         </div>
                     </div>
