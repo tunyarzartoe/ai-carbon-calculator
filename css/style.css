@@ -188,7 +188,7 @@ body{
 .bottom-nav{
   display: flex;
   align-items: stretch;
-  background: rgba(28,38,35,.92);
+  /* background: rgba(28,38,35,.92); */
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
   border: 1px solid rgba(255,255,255,.08);
@@ -414,8 +414,8 @@ body{
 
 /* ================= QUICK REPLIES ================= */
 .reply-dock{
-  border-top: 1px solid var(--border);
-  background: var(--bg-panel);
+  /* border-top: 1px solid var(--border); */
+  /* background: var(--bg-panel); */
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
 }
 .reply-options{
@@ -453,6 +453,7 @@ body{
 }
 
 .reply-btn.restart{
+  margin-left: 20px !important;
   border-color: var(--cyan);
   color: var(--cyan);
 }

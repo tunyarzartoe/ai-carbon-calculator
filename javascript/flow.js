@@ -4,13 +4,13 @@ window.currentStepId = null;
 window.steps = [
   {
     id: 'intro',
-    ai: function(){
+    ai: function () {
       const history = window.loadHistory();
       const weekly = window.getWeeklyChallenge();
       const g = window.loadGamifyState();
       const weeklyCleared = g.weeklyKey === weekly.key && g.weeklyCleared;
 
-      if (history.length === 0){
+      if (history.length === 0) {
         return [
           'こんにちは。私は CO2 Compass、きみの1日の生活からおおよそのCO2排出量を推定するAIだよ🌱',
           'まずは4つの質問に答えて、自分の生活のベースラインを知るところから始めよう。'
@@ -26,9 +26,9 @@ window.steps = [
         : `${weekly.icon} 今週のチャレンジ: ${weekly.text}`;
       return [streakLine, weeklyLine];
     },
-    options: function(){
+    options: function () {
       const history = window.loadHistory();
-      if (history.length === 0){
+      if (history.length === 0) {
         // 初回はアプリの仕組みを理解してもらうため、じっくり診断を主役にする
         return [
           { label: 'はじめる（4問で診断）', icon: '✨', next: 'goal' },
@@ -51,7 +51,7 @@ window.steps = [
       { label: '12kg以下', icon: '🎯', value: 12, next: 'transport' },
       { label: '目標なし', icon: '➖', value: null, next: 'transport' }
     ],
-    onAnswer: function(val){ window.state.goal = val; }
+    onAnswer: function (val) { window.state.goal = val; }
   },
   {
     id: 'transport',
@@ -62,7 +62,7 @@ window.steps = [
       value: key,
       next: 'distance'
     })),
-    onAnswer: function(val){
+    onAnswer: function (val) {
       window.transportChoice = val;
       if (window.saveCommuteMode) window.saveCommuteMode(val);
     }
@@ -76,7 +76,7 @@ window.steps = [
       value: key,
       next: 'electricity'
     })),
-    onAnswer: function(val){
+    onAnswer: function (val) {
       const kgPerKm = window.TRANSPORT[window.transportChoice].kgPerKm || 0;
       const km = window.DISTANCE_KM[val].km || 0;
       if (window.saveCommuteKm) window.saveCommuteKm(km);
@@ -95,7 +95,7 @@ window.steps = [
       value: key,
       next: 'meal'
     })),
-    onAnswer: function(val){
+    onAnswer: function (val) {
       const hours = window.ELECTRICITY[val].hoursKwh || 0;
       const grid = window.getRegionalGridIntensity();
       const kg = +(grid.value * hours).toFixed(2);
@@ -111,7 +111,7 @@ window.steps = [
       value: key,
       next: 'waste'
     })),
-    onAnswer: function(val){
+    onAnswer: function (val) {
       const kg = +window.MEAL[val].kg.toFixed(2);
       window.addResult('meal', kg, `食事: ${window.MEAL[val].label} → 約 ${kg}kg`);
     }
@@ -125,14 +125,14 @@ window.steps = [
       value: key,
       next: 'result'
     })),
-    onAnswer: function(val){
+    onAnswer: function (val) {
       const kg = +window.WASTE[val].kg.toFixed(2);
       window.addResult('waste', kg, `ゴミ分別: ${window.WASTE[val].label} → 約 ${kg}kg`);
     }
   }
 ];
 
-function goToStep(stepId){
+function goToStep(stepId) {
   if (!stepId) return;
   if (stepId === 'result') return;
   const step = window.steps.find(s => s.id === stepId);
@@ -162,8 +162,8 @@ function goToStep(stepId){
   window.aiSpeak(lines, () => window.renderOptions(options, selectOption));
 }
 
-function selectOption(opt){
-  if (opt.isQuizAnswer){
+function selectOption(opt) {
+  if (opt.isQuizAnswer) {
     window.clearOptions();
     window.addBubble(opt.label, 'user');
     window.lastQuizCorrect = opt.correct;
@@ -180,17 +180,18 @@ function selectOption(opt){
     return;
   }
 
-  if (opt.showResultModal){
+  if (opt.showResultModal) {
     window.openResultModal();
     return;
   }
 
-  if (opt.showAchievements){
+  if (opt.showAchievements) {
+    window.closeResultModal();
     window.openAchievementsModal();
     return;
   }
 
-  if (opt.quickLog){
+  if (opt.quickLog) {
     window.renderQuickLogList();
     window.openQuickLogModal();
     return;
@@ -199,14 +200,14 @@ function selectOption(opt){
   window.clearOptions();
   window.addBubble(opt.label, 'user');
 
-  if (opt.value !== undefined){
+  if (opt.value !== undefined) {
     const currentStep = window.steps.find(s => s.id === window.currentStepId) || window.steps.find(s => Array.isArray(s.options) && s.options.some(o => o === opt));
     if (currentStep && currentStep.onAnswer) currentStep.onAnswer(opt.value);
 
     // 通学・通勤距離が登録済みなら distance ステップを自動スキップする
-    if (currentStep && currentStep.id === 'transport'){
+    if (currentStep && currentStep.id === 'transport') {
       const savedKm = window.getCommuteKm ? window.getCommuteKm() : null;
-      if (savedKm !== null){
+      if (savedKm !== null) {
         const kgPerKm = window.TRANSPORT[window.transportChoice].kgPerKm || 0;
         const totalKm = savedKm * 2;
         const kg = +(kgPerKm * totalKm).toFixed(2);
@@ -217,18 +218,18 @@ function selectOption(opt){
     }
   }
 
-  if (opt.restart){
+  if (opt.restart) {
     return setTimeout(restart, 300);
   }
 
-  if (opt.next === 'result'){
+  if (opt.next === 'result') {
     setTimeout(showResult, 400);
   } else {
     setTimeout(() => goToStep(opt.next), 300);
   }
 }
 
-function showResult(){
+function showResult() {
   const { grade, cls, msg } = window.rankFor(window.state.total);
   const chart = window.buildBreakdownChart(window.state.breakdown);
   const message = window.state.total === 0
@@ -264,7 +265,7 @@ function showResult(){
 
   window.addBubble('診断が完了したよ🎉 結果を見てみよう👇', 'ai');
 
-  if (xpResult.leveledUp){
+  if (xpResult.leveledUp) {
     const toast = document.createElement('div');
     toast.className = 'bubble ai level-up-toast';
     toast.innerHTML = `🎉 レベルアップ！ Lv.${xpResult.level} になったよ`;
@@ -272,7 +273,7 @@ function showResult(){
     window.scrollToBottom();
   }
 
-  if (weeklyResult.justCleared){
+  if (weeklyResult.justCleared) {
     const toast = document.createElement('div');
     toast.className = 'bubble ai badge-unlock-toast';
     toast.innerHTML = `${weeklyResult.challenge.icon} 今週のチャレンジをクリア！ +${weeklyResult.bonusXp}XP`;
@@ -280,7 +281,7 @@ function showResult(){
     window.scrollToBottom();
   }
 
-  if (newBadges.length > 0){
+  if (newBadges.length > 0) {
     window.vibrateForBadge();
     newBadges.forEach(b => {
       const toast = document.createElement('div');
@@ -296,17 +297,17 @@ function showResult(){
     : '';
 
   const body = document.getElementById('resultModalBody');
-  if (body){
+  if (body) {
     body.innerHTML = `\n      <div class="rank ${cls}">${grade}<span class="rank-label">ランク</span></div>\n      <p class="result-summary">本日の推定排出量: <strong>${window.state.total.toFixed(1)} kg CO2</strong></p>\n      <div class="result-breakdown">${chart}</div>\n      ${window.weeklyTrendHtml ? window.weeklyTrendHtml(updatedHistory) : ''}\n      ${window.goalMessageHtml(window.state.goal, window.state.total)}\n      ${window.co2EquivalentHtml(window.state.total)}\n      ${window.co2ToYenHtml(window.state.breakdown)}\n      ${window.quickLogSummaryHtml ? window.quickLogSummaryHtml() : ''}\n      ${window.monthlyGoalResultHtml ? window.monthlyGoalResultHtml() : ''}\n      <p class="result-message">${message}</p>\n      ${insightHtml}\n      <div id="weatherTipSlot"></div>\n      <div class="xp-block">\n        <div class="xp-row"><span class="xp-label">Lv.${xpResult.level}</span><span class="xp-gain">+${xpResult.gained}XP</span></div>\n        <div class="xp-track"><div class="xp-fill" style="width:${(xpResult.xpIntoLevel / xpResult.xpPerLevel) * 100}%"></div></div>\n      </div>\n      ${streakBadgeHtml}\n      <div class="result-modal-actions">\n        <button id="resultAchievementsBtn" class="reply-btn" type="button">\n          <span class="btn-icon">🎓</span><span class="btn-text">認定証を見る</span>\n        </button>\n        <button id="resultRestartBtn" class="reply-btn restart" type="button">\n          <span class="btn-icon">↻</span><span class="btn-text">もう一度診断する</span>\n        </button>\n      </div>\n    `;
     const restartBtn = document.getElementById('resultRestartBtn');
     if (restartBtn) restartBtn.onclick = () => { window.closeResultModal(); restart(); };
 
     const achievementsBtn = document.getElementById('resultAchievementsBtn');
-    if (achievementsBtn) achievementsBtn.onclick = () => window.openAchievementsModal();
+    if (achievementsBtn) achievementsBtn.onclick = () => { window.closeResultModal(); window.openAchievementsModal(); };
 
     // 天気は非同期で取得されるので、届き次第あとから差し込む
     // （初回の診断完了時にだけ位置情報の許可を求める＝起動直後に求めない）
-    if (!window.weatherTipPromise){
+    if (!window.weatherTipPromise) {
       window.weatherTipPromise = window.fetchWeatherTip();
     }
     window.weatherTipPromise.then((weather) => {
@@ -325,7 +326,7 @@ function showResult(){
   ], selectOption);
 }
 
-function restart(){
+function restart() {
   window.state.total = 0;
   window.state.goal = null;
   window.state.breakdown = { transport: 0, electricity: 0, meal: 0, waste: 0 };
@@ -340,7 +341,7 @@ function restart(){
   goToStep('intro');
 }
 
-function initApp(){
+function initApp() {
   window.updateGauge();
   goToStep('intro');
   if (window.reminder && window.reminder.checkOnOpen) window.reminder.checkOnOpen();
