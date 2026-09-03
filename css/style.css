@@ -590,9 +590,6 @@ body{
 .achievements-subtabs{
   display: flex;
   gap: 6px;
-  padding: 0;
-  margin: 4px 0 16px;
-  border-bottom: 1px solid var(--border);
   background: transparent;
   border-radius: 0;
 }
@@ -1401,11 +1398,11 @@ body{
   color: var(--text-dim);
 }
 
-.data-manage{
+/* .data-manage{
   margin-top: 18px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
-}
+} */
 .data-manage-heading{
   margin: 0 0 6px;
   font-family: var(--font-display);
@@ -1514,9 +1511,9 @@ body{
 .achievements-subtabs{
   display: flex;
   gap: 6px;
-  padding: 4px 4px 12px;
+  padding:4px 4px 4px 12px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 14px;
+  /* margin-bottom: 14px; */
 }
 .subtab-btn{
   flex: 1;
@@ -1607,7 +1604,7 @@ body{
    長いコンテンツをスクロールしても、タブが常に手の届く位置に残る。 */
 .achievements-subtabs{
   position: static;
-  margin-top: 0;
+  /* margin-top: 0; */
 }
 /* ==========================================================
    チャット内蔵カード（モーダル廃止版）
