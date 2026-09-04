@@ -1,0 +1,34 @@
+/* =========================================================
+   📦 バックアップ／復元（実際のアプリらしい確認・フィードバック）
+   既存の style.css のデザイントークンをそのまま利用する。
+   ========================================================= */
+.backup-toast{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.backup-toast-text{ margin: 0; }
+
+.backup-toast-warn{
+  border: 1px solid var(--warn);
+}
+.backup-toast-error{
+  border: 1px solid var(--danger);
+}
+.backup-toast-success{
+  border: 1px solid var(--mint);
+}
+
+.backup-toast-actions{
+  display: flex;
+  gap: 8px;
+}
+.backup-toast-actions .reply-btn{
+  flex: 1;
+  justify-content: center;
+}
+.backup-toast-actions .reply-btn.backup-toast-danger{
+  background: var(--danger);
+  color: var(--bg-void);
+  border-color: var(--danger);
+}

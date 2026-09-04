@@ -69,10 +69,31 @@
     return 'オンにすると端末通知の許可を確認するよ（許可しなくてもアプリを開いたときにはお知らせするよ）。';
   }
 
+  function nextOccurrence(state){
+    const [hh, mm] = (state.time || '20:00').split(':').map(n => parseInt(n, 10));
+    if (isNaN(hh) || isNaN(mm)) return null;
+    const now = new Date();
+    for (let i = 0; i < 8; i++){
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, hh, mm, 0);
+      if (d <= now) continue; // 今日の時刻がもう過ぎていたら翌日以降を探す
+      if (state.days.includes(d.getDay())) return d;
+    }
+    return null;
+  }
+
   function statusLabel(state){
     if (!state.enabled) return 'リマインダーはオフだよ。';
-    const dayLabel = state.days.length === 7 ? '毎日' : state.days.slice().sort().map(d => DAY_LABELS[d]).join('・') + '曜日';
-    return `${dayLabel} ${state.time} までに記録がなければお知らせするよ。`;
+    const next = nextOccurrence(state);
+    if (!next){
+      const dayLabel = state.days.length === 7 ? '毎日' : state.days.slice().sort().map(d => DAY_LABELS[d]).join('・') + '曜日';
+      return `${dayLabel} ${state.time} までに記録がなければお知らせするよ。`;
+    }
+    const todayKey = window.todayStr ? window.todayStr() : null;
+    const y = next.getFullYear(), m = next.getMonth() + 1, d = next.getDate();
+    const isToday = todayKey === `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const mm2 = String(next.getMinutes()).padStart(2, '0');
+    const when = isToday ? `今日 ${next.getHours()}:${mm2}` : `${m}/${d}（${DAY_LABELS[next.getDay()]}）${next.getHours()}:${mm2}`;
+    return `次回のお知らせ予定: ${when}`;
   }
 
   /* ---------- UI描画 ---------- */
@@ -217,9 +238,9 @@
 
     render();
 
-    setInterval(checkOnOpen, CHECK_INTERVAL_MS);
+    setInterval(() => { checkOnOpen(); render(); }, CHECK_INTERVAL_MS);
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') checkOnOpen();
+      if (document.visibilityState === 'visible'){ checkOnOpen(); render(); }
     });
   }
 
