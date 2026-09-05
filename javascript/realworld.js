@@ -413,7 +413,10 @@ window.shareCertificateImage = function(certData){
           await navigator.share({ title: 'CO2 Compass 認定証', text: shareText });
           return;
         } catch (e){
-          // ユーザーがキャンセルした/失敗した場合は画像保存にフォールバック
+          // ユーザーが共有シートを開いた上でキャンセルしただけの場合は AbortError になる。
+          // これは正常な操作なので、勝手に画像をダウンロードしたりはしない。
+          if (e && e.name === 'AbortError') return;
+          // それ以外（Web Share API が使えない環境・実際の失敗）の場合だけ、画像保存にフォールバックする
         }
       }
       window.downloadCertificateImage(certData);
