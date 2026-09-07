@@ -1,0 +1,127 @@
+/* =========================================================
+   起動時のオンボーディング演出（ローディング → ニックネーム入力）
+   .app に対して position:absolute で重ね、既存の
+   modal-overlay（z-index:50）より上に来るようにする。
+
+   重要: display:flex を持つクラスと hidden 属性を併用する場合、
+   [hidden]{ display:none } はブラウザのデフォルトスタイルで
+   詳細度が .onboarding-overlay と同じため、あとから読み込まれる
+   こちらのCSSが勝ってしまい、hidden指定でも実際には
+   非表示にならない（＝クリックできてしまうのに何も起きない）
+   事故が起きる。!important で明示的に上書きしておく。
+   ========================================================= */
+.onboarding-overlay{
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 32px;
+  text-align: center;
+  background: var(--bg-panel);
+  opacity: 0;
+  transition: opacity .35s ease;
+  pointer-events: none;
+}
+.onboarding-overlay[hidden]{
+  display: none !important;
+}
+.onboarding-overlay.visible{
+  opacity: 1;
+  pointer-events: auto;
+}
+.onboarding-overlay .brand-icon{
+  width: 64px;
+  height: 64px;
+}
+
+/* ローディング画面：起動直後だけは即座に見えていてよいので、
+   JS側で最初から .visible を付けた状態で描画する。
+   アイコンの脈動＋下の3つの点を順番に光らせるインジケーターで
+   「読み込み中」であることをはっきり伝える。 */
+@keyframes onboardingPulse{
+  0%, 100%{ transform: scale(1); opacity: .55; }
+  50%{ transform: scale(1.08); opacity: 1; }
+}
+.loading-screen .brand-icon{
+  animation: onboardingPulse 1.3s ease-in-out infinite;
+}
+.loading-text{
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.loading-dots{
+  display: inline-flex;
+  gap: 3px;
+}
+.loading-dots span{
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  animation: loadingDotBlink 1.2s ease-in-out infinite;
+}
+.loading-dots span:nth-child(2){ animation-delay: .15s; }
+.loading-dots span:nth-child(3){ animation-delay: .3s; }
+@keyframes loadingDotBlink{
+  0%, 80%, 100%{ opacity: .25; transform: translateY(0); }
+  40%{ opacity: 1; transform: translateY(-2px); background: var(--mint); }
+}
+
+/* ニックネーム入力画面 */
+.nickname-screen .brand-icon{
+  animation: onboardingEnter .4s ease both;
+}
+@keyframes onboardingEnter{
+  from{ transform: translateY(6px) scale(.92); opacity: 0; }
+  to{ transform: translateY(0) scale(1); opacity: 1; }
+}
+.onboarding-title{
+  margin: 4px 0 0;
+  font-family: var(--font-body);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-hi);
+}
+.onboarding-body{
+  margin: 0 0 6px;
+  max-width: 280px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-dim);
+}
+.onboarding-input-row{
+  width: 100%;
+  max-width: 280px;
+}
+.onboarding-input-row input{
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-panel-2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--text-hi);
+  font-family: var(--font-body);
+  font-size: 15px;
+  text-align: center;
+  transition: border-color .15s ease;
+}
+.onboarding-input-row input::placeholder{ color: var(--text-dim); }
+.onboarding-input-row input:focus{
+  outline: none;
+  border-color: var(--mint);
+}
+.onboarding-submit{
+  width: 100%;
+  max-width: 280px;
+  justify-content: center;
+}
