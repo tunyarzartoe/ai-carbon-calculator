@@ -125,3 +125,5 @@
   max-width: 280px;
   justify-content: center;
 }
+.loading-screen{ z-index: 110; }
+.nickname-screen{ z-index: 120; }

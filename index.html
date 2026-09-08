@@ -20,6 +20,7 @@
     <link rel="stylesheet" href="css/reminder.css">
     <link rel="stylesheet" href="css/backup.css">
     <link rel="stylesheet" href="css/nickname.css">
+    <link rel="stylesheet" href="css/profile-edit.css">
 </head>
 
 <body>
@@ -129,10 +130,13 @@
             <div class="page-scroll">
                 <div id="achPanelCert" class="achievements-panel active">
                     <div id="growthTreeCard" class="growth-tree-card"></div>
-                    <div class="cert-name-field">
+                    <div class="cert-name-field" hidden>
                         <label for="certNameInput">証明書に表示するお名前（任意）</label>
                         <input id="certNameInput" type="text" maxlength="20" placeholder="ニックネームなど">
                     </div>
+                    <button type="button" id="profileEditOpenBtn" class="reply-btn profile-edit-btn">
+                        <span class="btn-icon">✏️</span><span class="btn-text">プロフィール編集</span>
+                    </button>
                     <div id="certificateCard" class="certificate-card"></div>
                     <div class="certificate-actions">
                         <button id="certShareBtn" class="reply-btn" type="button">
@@ -176,7 +180,7 @@
                         </div>
                     </div>
 
-                    <div class="data-manage">
+                    <!-- <div class="data-manage">
                         <div class="reminder-toggle-row">
                             <div>
                                 <h3 class="data-manage-heading">🔔 記録リマインダー</h3>
@@ -215,7 +219,7 @@
                                 <span class="btn-icon">🔔</span><span class="btn-text">テスト通知を送る</span>
                             </button>
                         </div>
-                    </div>
+                    </div> -->
                 </div>
             </div>
         </div>
@@ -313,6 +317,20 @@
             </div>
         </div>
 
+        <!-- ===== プロフィール編集モーダル（証明書のお名前を変更する） ===== -->
+        <div id="profileEditModal" class="modal-backdrop" hidden>
+            <div class="modal-box">
+                <h3 class="modal-box-title">プロフィール編集</h3>
+                <p class="modal-box-desc">証明書に表示するお名前を変更できるよ。</p>
+                <input type="text" id="profileEditInput" maxlength="20" placeholder="ニックネームなど" autocomplete="off">
+                <p id="profileEditError" class="modal-box-error" hidden></p>
+                <div class="modal-box-actions">
+                    <button type="button" id="profileEditCancel" class="reply-btn quiz-option">キャンセル</button>
+                    <button type="button" id="profileEditSave" class="reply-btn">保存する</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script src="javascript/state.js"></script>
@@ -330,6 +348,7 @@
     <script src="javascript/modals.js"></script>
     <script src="javascript/flow.js"></script>
     <script src="javascript/nickname.js"></script>
+    <script src="javascript/profile-edit.js"></script>
     <script src="javascript/main.js"></script>
 </body>
 

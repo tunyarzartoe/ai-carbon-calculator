@@ -1,30 +1,3 @@
-// 起動時のオンボーディング演出:
-//  - ローディング画面を出す（最低表示時間＋アイコンの脈動＋3点ドットで
-//    「読み込み中」であることをはっきり伝える）
-//  - ローディングが完全にフェードアウトし終わってから、
-//    「まだ名前（ニックネーム）が保存されていない」場合だけ
-//    ニックネーム入力画面をフェードインで表示する。
-//    診断履歴の有無とは無関係に、名前が無い限り毎回の起動時に聞く
-//    （スキップした場合は次回また聞かれる。一度でも入力すれば、
-//    以後は聞かれなくなる）。
-//    （2つの画面が重なって同時に表示されることがないよう、必ず順番に切り替える）
-//  - チャットの「AIが打ち込む」演出を、オーバーレイの裏側で先に
-//    終わらせてしまわないよう、window.initApp の実行をオンボーディングが
-//    完全に終わるまで遅らせる。main.js は変更しなくてよい。
-//
-// 認定証の名前について（重要な修正）:
-//  gamify.js がすでに window.CERT_NAME_KEY ('co2compass_cert_name') を使った
-//  window.saveCertName() / window.loadCertName() で証明書の名前を管理しており、
-//  renderAchievements() 内でその値を #certNameInput に反映している。
-//  以前のバージョンはこれを知らずに別のキー（co2-compass-nickname）に
-//  保存し、#certNameInput のDOMを直接書き換えようとしていたため、
-//  renderAchievements() が呼ばれるたびに gamify.js 側の値で上書きされて
-//  しまい「証明書に反映されない」不具合になっていた。
-//  正しい修正は、オンボーディングで入力した名前を window.saveCertName() で
-//  gamify.js と同じ場所に保存するだけにすること（DOMを直接触る必要はなく、
-//  openAchievementsModal をラップする必要もない）。認定証タブでは、
-//  この名前を gamify.js 側の #certNameInput がそのまま「編集可能な欄」として
-//  表示するので、オンボーディングで入力した名前もあとから自由に書き換えられる。
 (function(){
   const LEGACY_NICKNAME_KEY = 'co2-compass-nickname'; // 移行用（旧バージョンの保存先）
   const MIN_LOADING_MS = 900;   // 一瞬で消えてチカチカしないよう最低表示時間を設ける
@@ -91,9 +64,13 @@
     }, FADE_MS);
   }
 
-  function showOverlay(el){
+  function showOverlay(el, instant){
     if (!el) return;
     el.hidden = false;
+    if (instant){
+      requestAnimationFrame(() => el.classList.add('visible'));
+      return;
+    }
     // hidden解除直後にすぐclassを付けるとtransitionが発火しないブラウザが
     // あるため、1回描画を確定させてからvisibleを付ける
     setTimeout(() => el.classList.add('visible'), 20);
@@ -107,7 +84,7 @@
     const skipBtn = document.getElementById('onboardingNicknameSkip');
     if (!screen){ runRealInitAppNow(); return; }
 
-    showOverlay(screen);
+    showOverlay(screen, true);
     if (input) setTimeout(() => input.focus(), FADE_MS);
 
     const finish = () => hideOverlay(screen, runRealInitAppNow);
@@ -129,13 +106,22 @@
       const elapsed = Date.now() - startedAt;
       const wait = Math.max(0, MIN_LOADING_MS - elapsed);
       setTimeout(() => {
+        const needsNickname = !getNickname();
+
+        if (needsNickname) {
+          // loading をゆっくり消すより、nickname を先に見せてから
+          // loading は即座に隠す。chat が一瞬でも見えるのを防ぐ。
+          startNicknameStep();
+          if (loadingScreen){
+            loadingScreen.classList.remove('visible');
+            loadingScreen.hidden = true;
+          }
+          return;
+        }
+
         // ローディングが完全にフェードアウトし終わってから次に進む
         // （2つの画面が同時に重なって見えることがないようにする）
-        hideOverlay(loadingScreen, () => {
-          const needsNickname = !getNickname();
-          if (needsNickname) startNicknameStep();
-          else runRealInitAppNow();
-        });
+        hideOverlay(loadingScreen, runRealInitAppNow);
       }, wait);
     };
 
