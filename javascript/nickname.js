@@ -1,68 +1,65 @@
 // 起動時のオンボーディング演出:
 //  - ローディング画面を出す（最低表示時間＋アイコンの脈動＋3点ドットで
 //    「読み込み中」であることをはっきり伝える）
-//  - ローディングが完全にフェードアウトし終わってから、初回起動時
-//    （historyが空）だけニックネーム入力画面をフェードインで表示する
+//  - ローディングが完全にフェードアウトし終わってから、
+//    「まだ名前（ニックネーム）が保存されていない」場合だけ
+//    ニックネーム入力画面をフェードインで表示する。
+//    診断履歴の有無とは無関係に、名前が無い限り毎回の起動時に聞く
+//    （スキップした場合は次回また聞かれる。一度でも入力すれば、
+//    以後は聞かれなくなる）。
 //    （2つの画面が重なって同時に表示されることがないよう、必ず順番に切り替える）
 //  - チャットの「AIが打ち込む」演出を、オーバーレイの裏側で先に
 //    終わらせてしまわないよう、window.initApp の実行をオンボーディングが
-//    完全に終わるまで遅らせる。main.js は変更しなくてよい
-//    （initAppという名前で呼べば動く前提の薄いラッパーに差し替えるだけ）。
-//  - 保存したニックネームは、認定証タブ（#certNameInput）を開くたびに
-//    自動入力する。証明書欄を手動編集した場合もそれを覚えておく。
+//    完全に終わるまで遅らせる。main.js は変更しなくてよい。
 //
-// 重要な既知の不具合の修正:
-//  hidden属性とdisplay:flexを持つクラスを併用すると、ブラウザの
-//  デフォルトスタイル [hidden]{display:none} と .onboarding-overlay
-//  の詳細度が同じため、あとから読み込まれるCSSが勝ってしまい
-//  「hidden指定でも実際には非表示になっていない」ことがあった
-//  （nickname.css側で `!important` により明示的に修正済み）。
-//  この状態だと、ボタンを押しても何も起きないように見える
-//  （そもそも該当ステップのイベントハンドラがまだ付いていないタイミングで
-//  画面が誤って先に表示されてしまっていたため）。
+// 認定証の名前について（重要な修正）:
+//  gamify.js がすでに window.CERT_NAME_KEY ('co2compass_cert_name') を使った
+//  window.saveCertName() / window.loadCertName() で証明書の名前を管理しており、
+//  renderAchievements() 内でその値を #certNameInput に反映している。
+//  以前のバージョンはこれを知らずに別のキー（co2-compass-nickname）に
+//  保存し、#certNameInput のDOMを直接書き換えようとしていたため、
+//  renderAchievements() が呼ばれるたびに gamify.js 側の値で上書きされて
+//  しまい「証明書に反映されない」不具合になっていた。
+//  正しい修正は、オンボーディングで入力した名前を window.saveCertName() で
+//  gamify.js と同じ場所に保存するだけにすること（DOMを直接触る必要はなく、
+//  openAchievementsModal をラップする必要もない）。認定証タブでは、
+//  この名前を gamify.js 側の #certNameInput がそのまま「編集可能な欄」として
+//  表示するので、オンボーディングで入力した名前もあとから自由に書き換えられる。
 (function(){
-  const NICKNAME_KEY = 'co2-compass-nickname';
+  const LEGACY_NICKNAME_KEY = 'co2-compass-nickname'; // 移行用（旧バージョンの保存先）
   const MIN_LOADING_MS = 900;   // 一瞬で消えてチカチカしないよう最低表示時間を設ける
   const FADE_MS = 380;          // nickname.css の transition (.35s) に余裕を足した値
 
-  /* ---------- 保存・取得 ---------- */
+  /* ---------- 保存・取得（gamify.jsの実装に委譲する） ---------- */
   function getNickname(){
-    try{ return localStorage.getItem(NICKNAME_KEY) || null; }
+    if (typeof window.loadCertName === 'function'){
+      return window.loadCertName() || null;
+    }
+    // gamify.jsが万一読み込まれていない場合の保険
+    try{ return localStorage.getItem('co2compass_cert_name') || null; }
     catch(e){ return null; }
   }
 
   function saveNickname(name){
     const trimmed = (name || '').trim();
     if (!trimmed) return; // 空・スキップの場合は既存の保存値を消さない
-    try{ localStorage.setItem(NICKNAME_KEY, trimmed); }
-    catch(e){ console.error('onboarding.saveNickname failed', e); }
+    if (typeof window.saveCertName === 'function'){
+      window.saveCertName(trimmed);
+    } else {
+      try{ localStorage.setItem('co2compass_cert_name', trimmed.slice(0, 20)); }
+      catch(e){ console.error('onboarding.saveNickname failed', e); }
+    }
+    // gamify.js の状態にも同じ名前を残しておく（他の画面で使われる場合に備えて）
+    if (typeof window.setUserName === 'function') window.setUserName(trimmed);
   }
 
-  /* ---------- 証明書欄との同期 ---------- */
-  function fillCertNameInput(){
-    const input = document.getElementById('certNameInput');
-    if (!input) return;
-    const saved = getNickname();
-    if (saved) input.value = saved;
-  }
-
-  function attachCertSync(){
-    const certInput = document.getElementById('certNameInput');
-    if (certInput){
-      certInput.addEventListener('change', () => saveNickname(certInput.value));
-    }
-    if (typeof window.openAchievementsModal === 'function'){
-      const original = window.openAchievementsModal;
-      window.openAchievementsModal = function(...args){
-        // renderAchievements等の描画タイミングに左右されず必ず反映されるよう、
-        // 呼ぶ前・呼んだ直後・少し遅れての3段構えで名前を埋め直す
-        fillCertNameInput();
-        const result = original.apply(this, args);
-        fillCertNameInput();
-        setTimeout(fillCertNameInput, 50);
-        return result;
-      };
-    }
+  /* 旧バージョンで co2-compass-nickname に保存されていた名前を、
+     gamify.js の正式な保存先へ一度だけ移行する */
+  function migrateLegacyNickname(){
+    try{
+      const legacy = localStorage.getItem(LEGACY_NICKNAME_KEY);
+      if (legacy && !getNickname()) saveNickname(legacy);
+    } catch(e){ /* ignore */ }
   }
 
   /* ---------- チャット初期化の遅延実行 ----------
@@ -135,8 +132,8 @@
         // ローディングが完全にフェードアウトし終わってから次に進む
         // （2つの画面が同時に重なって見えることがないようにする）
         hideOverlay(loadingScreen, () => {
-          const isFirstTime = !window.loadHistory || window.loadHistory().length === 0;
-          if (isFirstTime) startNicknameStep();
+          const needsNickname = !getNickname();
+          if (needsNickname) startNicknameStep();
           else runRealInitAppNow();
         });
       }, wait);
@@ -152,6 +149,6 @@
   // 読み込まれる想定。呼び出し時点で対象要素はすでにパース済みのため、
   // DOMContentLoadedを待たずに即座に実行してよい（待つとinitAppの
   // 差し替えがmain.jsの呼び出しに間に合わない可能性がある）。
-  attachCertSync();
+  migrateLegacyNickname();
   beginOnboarding();
 })();
