@@ -1,0 +1,41 @@
+<!DOCTYPE HTML>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>CO2環境学習 チャットガイド</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/question.css">
+</head>
+<body>
+
+<div class="app-container" id="chatGuideContainer">
+
+    <div class="chat-header">
+        <span>🌱 CO2環境学習 40問ガイド</span>
+        <button type="button" id="closeAppBtn" class="close-app-btn">✕ 閉じる</button>
+    </div>
+
+    <div id="chat-box" class="chat-box"></div>
+
+    <div class="footer-action">
+        <button type="button" id="openQuestionModalBtn" class="trigger-btn">💬 質問を選ぶ（全40問）</button>
+    </div>
+
+    <div id="modal-menu" class="modal-menu" hidden>
+        <div class="modal-header">
+            <span class="modal-title">カテゴリを選んで質問をタップ</span>
+            <button type="button" id="closeQuestionModalBtn" class="close-btn">✕</button>
+        </div>
+
+        <div id="tab-container" class="tab-container"></div>
+        <div id="options-container" class="options-container"></div>
+    </div>
+
+</div>
+
+<script src="javascript/question.js"></script>
+
+</body>
+</html>
