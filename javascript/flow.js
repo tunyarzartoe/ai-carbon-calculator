@@ -187,7 +187,9 @@ function selectOption(opt) {
 
   if (opt.showQuestions) {
     window.closeResultModal();
-    window.location.href = 'questions.html';
+    if (typeof window.openQuestionChat === 'function') {
+      window.openQuestionChat();
+    }
     return;
   }
 
@@ -330,7 +332,12 @@ function showResult() {
     if (restartBtn) restartBtn.onclick = () => { window.closeResultModal(); restart(); };
 
     const questionsBtn = document.getElementById('resultQuestionsBtn');
-    if (questionsBtn) questionsBtn.onclick = () => { window.closeResultModal(); window.location.href = 'questions.html'; };
+    if (questionsBtn) questionsBtn.onclick = () => {
+      window.closeResultModal();
+      if (typeof window.openQuestionChat === 'function') {
+        window.openQuestionChat();
+      }
+    };
 
     // 天気は非同期で取得されるので、届き次第あとから差し込む
     // （初回の診断完了時にだけ位置情報の許可を求める＝起動直後に求めない）
