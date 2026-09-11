@@ -406,42 +406,160 @@ function nextGrowthStage(stageId){
 }
 
 window.renderGrowthTreeSvg = function(stageId){
-  const ground = `<rect x="18" y="96" width="84" height="6" rx="3" fill="var(--border)"></rect>`;
+  const defs = `
+    <defs>
+      <linearGradient id="treeTrunkGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#3D5A4C"/>
+        <stop offset="100%" stop-color="#1A2B23"/>
+      </linearGradient>
+      <linearGradient id="treeLeafMain" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#55FFBD"/>
+        <stop offset="100%" stop-color="#1DAA74"/>
+      </linearGradient>
+      <linearGradient id="treeLeafBack" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#229665"/>
+        <stop offset="100%" stop-color="#0E583A"/>
+      </linearGradient>
+      <linearGradient id="treeLeafHighlight" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#99FFD7"/>
+        <stop offset="100%" stop-color="#3DFFB0"/>
+      </linearGradient>
+      <radialGradient id="treeGlowAura" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#3DFFB0" stop-opacity="0.38"/>
+        <stop offset="100%" stop-color="#3DFFB0" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="bloomGlowAura" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#FF9EC2" stop-opacity="0.35"/>
+        <stop offset="60%" stop-color="#3DFFB0" stop-opacity="0.14"/>
+        <stop offset="100%" stop-color="#3DFFB0" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+  `;
+
+  const ground = `
+    <g class="tree-ground">
+      <ellipse cx="60" cy="100" rx="38" ry="6" fill="#0c1612" opacity="0.6"></ellipse>
+      <path d="M22,100 C36,95 84,95 98,100 C86,104 34,104 22,100 Z" fill="#182620"></path>
+      <path d="M28,100 C40,96 80,96 92,100" stroke="#253A31" stroke-width="1.5" fill="none"></path>
+      <path d="M42,98 Q40,92 37,94 M44,98 Q47,93 50,95" stroke="#3DFFB0" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.8"></path>
+      <path d="M78,98 Q76,92 73,94 M80,98 Q83,93 86,95" stroke="#3DFFB0" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.8"></path>
+    </g>
+  `;
+
   let parts = '';
 
   if (stageId === 'seed'){
     parts = `
-      <ellipse cx="60" cy="93" rx="11" ry="5" fill="var(--bg-panel-2)"></ellipse>
-      <circle cx="60" cy="88" r="7" fill="var(--mint)"></circle>`;
+      <circle cx="60" cy="85" r="22" fill="url(#treeGlowAura)" class="tree-seed-glow"></circle>
+      <path d="M60,86 C58,80 54,77 52,78 C52,83 58,86 60,86 Z" fill="url(#treeLeafHighlight)" class="tree-seed-sprout"></path>
+      <path d="M60,86 C62,78 67,75 69,77 C68,82 62,86 60,86 Z" fill="url(#treeLeafMain)" class="tree-seed-sprout-2"></path>
+      <path d="M60,82 C53,82 48,88 48,93 C48,97 53,100 60,100 C67,100 72,97 72,93 C72,88 67,82 60,82 Z" fill="url(#treeTrunkGrad)" class="tree-seed-body"></path>
+      <path d="M54,86 C58,84 62,84 66,86" stroke="#55FFBD" stroke-width="1.2" stroke-linecap="round" fill="none" opacity="0.8"></path>
+      <ellipse cx="60" cy="91" rx="4" ry="2" fill="#3DFFB0" opacity="0.35" class="tree-seed-core"></ellipse>
+      <circle cx="51" cy="74" r="1.5" fill="#33C7E8" class="tree-sparkle-1"></circle>
+      <circle cx="70" cy="70" r="1.8" fill="#3DFFB0" class="tree-sparkle-2"></circle>
+      <circle cx="60" cy="62" r="1.2" fill="#E7F5EF" class="tree-sparkle-3"></circle>
+    `;
   } else if (stageId === 'sprout'){
     parts = `
-      <line x1="60" y1="96" x2="60" y2="72" stroke="var(--mint)" stroke-width="4" stroke-linecap="round"></line>
-      <ellipse cx="49" cy="75" rx="11" ry="6" fill="var(--mint)" transform="rotate(-30 49 75)"></ellipse>
-      <ellipse cx="71" cy="75" rx="11" ry="6" fill="var(--mint)" transform="rotate(30 71 75)"></ellipse>`;
+      <path d="M60,99 C59,90 57,78 60,65" stroke="url(#treeTrunkGrad)" stroke-width="4.5" stroke-linecap="round" fill="none"></path>
+      <path d="M60,99 C59,90 57,78 60,65" stroke="#3DFFB0" stroke-width="2.5" stroke-linecap="round" fill="none" opacity="0.85"></path>
+      <g class="tree-sway-leaf-left">
+        <path d="M59,78 C45,76 33,62 34,54 C44,53 56,66 59,78 Z" fill="url(#treeLeafMain)"></path>
+        <path d="M59,78 Q47,68 36,56" stroke="#99FFD7" stroke-width="1.2" fill="none" opacity="0.8"></path>
+      </g>
+      <g class="tree-sway-leaf-right">
+        <path d="M60,70 C75,67 87,52 86,44 C76,44 64,57 60,70 Z" fill="url(#treeLeafHighlight)"></path>
+        <path d="M60,70 Q73,59 84,47" stroke="#E7F5EF" stroke-width="1.2" fill="none" opacity="0.8"></path>
+      </g>
+      <path d="M60,65 C57,58 60,50 60,47 C61,50 63,58 60,65 Z" fill="#99FFD7"></path>
+      <circle cx="86" cy="44" r="2.2" fill="#33C7E8" class="tree-sparkle-1"></circle>
+      <circle cx="34" cy="54" r="1.6" fill="#3DFFB0" class="tree-sparkle-2"></circle>
+    `;
   } else if (stageId === 'young'){
     parts = `
-      <line x1="60" y1="96" x2="60" y2="54" stroke="var(--text-dim)" stroke-width="5" stroke-linecap="round"></line>
-      <circle cx="60" cy="48" r="24" fill="var(--mint)" opacity="0.92"></circle>`;
+      <path d="M54,99 Q49,102 44,102 M66,99 Q71,102 76,102" stroke="url(#treeTrunkGrad)" stroke-width="3" stroke-linecap="round" fill="none"></path>
+      <path d="M57,99 L58,74 Q58,66 48,58" stroke="url(#treeTrunkGrad)" stroke-width="5.5" stroke-linecap="round" fill="none"></path>
+      <path d="M62,76 Q64,68 72,60" stroke="url(#treeTrunkGrad)" stroke-width="4.5" stroke-linecap="round" fill="none"></path>
+      <line x1="59" y1="74" x2="60" y2="52" stroke="url(#treeTrunkGrad)" stroke-width="4.5" stroke-linecap="round"></line>
+      <g class="tree-canopy-sway">
+        <circle cx="45" cy="54" r="17" fill="url(#treeLeafBack)"></circle>
+        <circle cx="75" cy="52" r="16" fill="url(#treeLeafBack)"></circle>
+        <circle cx="60" cy="42" r="22" fill="url(#treeLeafMain)" class="tree-cluster-center"></circle>
+        <circle cx="43" cy="46" r="16" fill="url(#treeLeafMain)" class="tree-cluster-left"></circle>
+        <circle cx="76" cy="44" r="15" fill="url(#treeLeafHighlight)" class="tree-cluster-right"></circle>
+        <circle cx="58" cy="31" r="14" fill="url(#treeLeafHighlight)" class="tree-cluster-top"></circle>
+        <circle cx="35" cy="38" r="1.6" fill="#3DFFB0" class="tree-sparkle-1"></circle>
+        <circle cx="85" cy="36" r="2" fill="#33C7E8" class="tree-sparkle-2"></circle>
+      </g>
+    `;
   } else if (stageId === 'tree'){
     parts = `
-      <line x1="60" y1="96" x2="60" y2="40" stroke="var(--text-dim)" stroke-width="6" stroke-linecap="round"></line>
-      <circle cx="43" cy="44" r="21" fill="var(--mint)" opacity="0.85"></circle>
-      <circle cx="77" cy="44" r="21" fill="var(--mint)" opacity="0.85"></circle>
-      <circle cx="60" cy="28" r="26" fill="var(--mint)"></circle>`;
+      <path d="M53,99 Q46,102 38,103 M67,99 Q74,102 82,103" stroke="url(#treeTrunkGrad)" stroke-width="4.5" stroke-linecap="round" fill="none"></path>
+      <path d="M55,99 L57,68 Q57,56 42,47 M64,72 Q67,58 79,50 M60,68 L60,42" stroke="url(#treeTrunkGrad)" stroke-width="8" stroke-linecap="round" fill="none"></path>
+      <path d="M59,96 L59,68" stroke="#3D5A4C" stroke-width="3" stroke-linecap="round" opacity="0.6"></path>
+      <g class="tree-canopy-sway">
+        <circle cx="38" cy="48" r="20" fill="url(#treeLeafBack)"></circle>
+        <circle cx="82" cy="46" r="20" fill="url(#treeLeafBack)"></circle>
+        <circle cx="60" cy="34" r="24" fill="url(#treeLeafBack)"></circle>
+        <circle cx="34" cy="42" r="18" fill="url(#treeLeafMain)" class="tree-cluster-left"></circle>
+        <circle cx="84" cy="40" r="18" fill="url(#treeLeafMain)" class="tree-cluster-right"></circle>
+        <circle cx="60" cy="38" r="26" fill="url(#treeLeafMain)" class="tree-cluster-center"></circle>
+        <circle cx="48" cy="28" r="17" fill="url(#treeLeafHighlight)"></circle>
+        <circle cx="72" cy="27" r="17" fill="url(#treeLeafHighlight)"></circle>
+        <circle cx="60" cy="20" r="17" fill="url(#treeLeafHighlight)" class="tree-cluster-top"></circle>
+        <circle cx="28" cy="38" r="2" fill="#3DFFB0" class="tree-firefly-1"></circle>
+        <circle cx="92" cy="32" r="2.2" fill="#33C7E8" class="tree-firefly-2"></circle>
+        <circle cx="56" cy="14" r="1.8" fill="#55FFBD" class="tree-firefly-3"></circle>
+        <circle cx="78" cy="56" r="1.6" fill="#3DFFB0" class="tree-firefly-4"></circle>
+      </g>
+    `;
   } else if (stageId === 'bloom'){
+    const flower = (x, y, s = 1) => `
+      <g transform="translate(${x}, ${y}) scale(${s})" class="tree-flower">
+        <circle cx="0" cy="-3.5" r="2.6" fill="#FFB5D0"></circle>
+        <circle cx="3.3" cy="-1.1" r="2.6" fill="#FFB5D0"></circle>
+        <circle cx="2" cy="3" r="2.6" fill="#FFB5D0"></circle>
+        <circle cx="-2" cy="3" r="2.6" fill="#FFB5D0"></circle>
+        <circle cx="-3.3" cy="-1.1" r="2.6" fill="#FFB5D0"></circle>
+        <circle cx="0" cy="0" r="1.6" fill="#FFFFFF"></circle>
+      </g>
+    `;
     parts = `
-      <line x1="60" y1="96" x2="60" y2="40" stroke="var(--text-dim)" stroke-width="6" stroke-linecap="round"></line>
-      <circle cx="43" cy="44" r="21" fill="var(--mint)" opacity="0.85"></circle>
-      <circle cx="77" cy="44" r="21" fill="var(--mint)" opacity="0.85"></circle>
-      <circle cx="60" cy="28" r="26" fill="var(--mint)"></circle>
-      <circle cx="42" cy="34" r="3.5" fill="var(--cyan)"></circle>
-      <circle cx="80" cy="38" r="3.5" fill="var(--cyan)"></circle>
-      <circle cx="60" cy="14" r="3.5" fill="var(--cyan)"></circle>
-      <circle cx="68" cy="56" r="3.5" fill="var(--cyan)"></circle>
-      <circle cx="38" cy="54" r="3.5" fill="var(--cyan)"></circle>`;
+      <circle cx="60" cy="38" r="38" fill="url(#bloomGlowAura)" class="tree-bloom-aura"></circle>
+      <path d="M53,99 Q46,102 38,103 M67,99 Q74,102 82,103" stroke="url(#treeTrunkGrad)" stroke-width="4.5" stroke-linecap="round" fill="none"></path>
+      <path d="M55,99 L57,68 Q57,56 42,47 M64,72 Q67,58 79,50 M60,68 L60,42" stroke="url(#treeTrunkGrad)" stroke-width="8" stroke-linecap="round" fill="none"></path>
+      <path d="M59,96 L59,68" stroke="#3D5A4C" stroke-width="3" stroke-linecap="round" opacity="0.6"></path>
+      <g class="tree-canopy-sway">
+        <circle cx="38" cy="48" r="20" fill="url(#treeLeafBack)"></circle>
+        <circle cx="82" cy="46" r="20" fill="url(#treeLeafBack)"></circle>
+        <circle cx="60" cy="34" r="24" fill="url(#treeLeafBack)"></circle>
+        <circle cx="34" cy="42" r="18" fill="url(#treeLeafMain)" class="tree-cluster-left"></circle>
+        <circle cx="84" cy="40" r="18" fill="url(#treeLeafMain)" class="tree-cluster-right"></circle>
+        <circle cx="60" cy="38" r="26" fill="url(#treeLeafMain)" class="tree-cluster-center"></circle>
+        <circle cx="48" cy="28" r="17" fill="url(#treeLeafHighlight)"></circle>
+        <circle cx="72" cy="27" r="17" fill="url(#treeLeafHighlight)"></circle>
+        <circle cx="60" cy="20" r="17" fill="url(#treeLeafHighlight)" class="tree-cluster-top"></circle>
+        ${flower(40, 36, 1)}
+        ${flower(78, 32, 1)}
+        ${flower(60, 20, 1.1)}
+        ${flower(52, 44, 0.9)}
+        ${flower(72, 46, 0.9)}
+        ${flower(32, 50, 0.85)}
+        ${flower(86, 48, 0.85)}
+        ${flower(60, 32, 0.95)}
+        <ellipse cx="26" cy="46" rx="2.5" ry="1.5" fill="#FFB5D0" class="tree-petal-drift-1"></ellipse>
+        <ellipse cx="88" cy="26" rx="2.8" ry="1.6" fill="#FF9EC2" class="tree-petal-drift-2"></ellipse>
+        <ellipse cx="96" cy="52" rx="2.2" ry="1.3" fill="#FFB5D0" class="tree-petal-drift-3"></ellipse>
+        <ellipse cx="44" cy="62" rx="2.6" ry="1.5" fill="#FFC9DF" class="tree-petal-drift-4"></ellipse>
+        <circle cx="36" cy="22" r="1.6" fill="#33C7E8" class="tree-firefly-1"></circle>
+        <circle cx="84" cy="18" r="1.8" fill="#3DFFB0" class="tree-firefly-2"></circle>
+        <circle cx="68" cy="10" r="1.5" fill="#E7F5EF" class="tree-firefly-3"></circle>
+      </g>
+    `;
   }
 
-  return `<svg viewBox="0 0 120 110" aria-hidden="true" focusable="false">${ground}${parts}</svg>`;
+  return `<svg viewBox="0 0 120 110" aria-hidden="true" focusable="false">${defs}${ground}${parts}</svg>`;
 };
 
 window.renderGrowthTree = function(){
@@ -455,8 +573,16 @@ window.renderGrowthTree = function(){
     ? `Lv.${next.minLevel}で${next.label}に成長するよ`
     : '最大まで成長したよ！';
 
+  const stages = window.GROWTH_STAGES;
+  const currentIdx = stages.findIndex(s => s.id === stage.id);
+  const stepsHtml = stages.map((s, idx) => {
+    const cls = idx < currentIdx ? 'done' : (idx === currentIdx ? 'active' : '');
+    return `<span class="tree-step-dot ${cls}" title="${s.label}"></span>`;
+  }).join('');
+
   el.innerHTML = `
     <div class="growth-tree-visual">${window.renderGrowthTreeSvg(stage.id)}</div>
+    <div class="growth-tree-steps">${stepsHtml}</div>
     <p class="growth-tree-label">${stage.label}</p>
     <p class="growth-tree-next">${nextLine}</p>
   `;

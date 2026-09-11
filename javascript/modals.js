@@ -11,6 +11,7 @@
 function switchPage(pageId){
   document.querySelectorAll('.app-page').forEach(p => p.classList.toggle('active', p.id === pageId));
 }
+window.switchPage = switchPage;
 
 function setTab(id){
   if (window.setActiveTab) window.setActiveTab(id);

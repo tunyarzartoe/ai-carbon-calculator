@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="css/backup.css">
     <link rel="stylesheet" href="css/nickname.css">
     <link rel="stylesheet" href="css/profile-edit.css">
+    <link rel="stylesheet" href="css/question.css">
 </head>
 
 <body>
@@ -90,6 +91,30 @@
             <footer class="reply-dock">
                 <div id="replyOptions" class="reply-options"></div>
             </footer>
+        </div>
+
+        <!-- ===== 🌱 CO2環境学習 40問ガイド PAGE ===== -->
+        <div id="questionPage" class="app-page">
+            <div class="question-subbar">
+                <button type="button" id="closeQuestionChatBtn" class="question-back-btn">‹ 診断に戻る</button>
+                <span class="question-subbar-title">🌱 CO2環境学習 40問ガイド</span>
+            </div>
+
+            <div id="questionChatBox" class="question-chat-box"></div>
+
+            <div class="question-chat-footer">
+                <button type="button" id="openQuestionModalBtn" class="question-trigger-btn">💬 質問を選ぶ（全40問）</button>
+            </div>
+
+            <div id="questionModalMenu" class="question-modal-menu" hidden>
+                <div class="question-modal-header">
+                    <span class="question-modal-title">カテゴリを選んで質問をタップ</span>
+                    <button type="button" id="closeQuestionModalBtn" class="question-modal-close-btn">✕</button>
+                </div>
+
+                <div id="questionTabContainer" class="question-tab-container"></div>
+                <div id="questionOptionsContainer" class="question-options-container"></div>
+            </div>
         </div>
 
         <!-- ===== 🗓️ 履歴 PAGE ===== -->
@@ -349,6 +374,7 @@
     <script src="javascript/flow.js"></script>
     <script src="javascript/nickname.js"></script>
     <script src="javascript/profile-edit.js"></script>
+    <script src="javascript/question.js"></script>
     <script src="javascript/main.js"></script>
 </body>
 
