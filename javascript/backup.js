@@ -1,13 +1,3 @@
-// バックアップ／復元のUI層（実際のデータ処理は data.js に完全に委譲する）:
-//  - データの実体（history・gamify）や保存形式（app/version/フィールド名）は
-//    data.js の window.downloadBackupFile() / window.importBackupFile() が
-//    唯一の正とする。ここでは「最終バックアップ表示」「復元前の確認」
-//    「成功・失敗のフィードバック」といった、real-appらしい体験だけを足す。
-//  - 復元前のプレビュー用に一度ファイルを読むが、実際の検証・書き込みは
-//    必ず window.importBackupFile に行わせる（判定がここと二重に分岐しないように）。
-//  - index.html には元々 exportDataBtn / importDataBtn / importFileInput に
-//    ハンドラーを付けているコードが見当たらなかったため、そのままだと
-//    ボタンを押しても何も起きない状態だった。このファイルがそれを配線する。
 (function(){
   const LAST_BACKUP_KEY = 'co2-compass-last-backup';
 
